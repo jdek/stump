@@ -1,15 +1,73 @@
-import { QueryClientContext, useSDK } from '@stump/client'
-import { Library, Media, Series } from '@stump/sdk'
-import { useQueries } from '@tanstack/react-query'
+import { useSDK } from '@stump/client'
+import { graphql, PaginationInfo } from '@stump/graphql'
+import { useQueries, useQueryClient } from '@tanstack/react-query'
+import { Link, useNavigation } from 'expo-router'
+import chunk from 'lodash/chunk'
 import debounce from 'lodash/debounce'
-import { useCallback, useMemo, useState } from 'react'
-import { SectionList, SectionListRenderItem, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { match } from 'ts-pattern'
+import { Search } from 'lucide-react-native'
+import { useCallback, useLayoutEffect, useState } from 'react'
+import { FlatList, TextInputChangeEventData, View } from 'react-native'
+import { NativeSyntheticEvent } from 'react-native'
+import { ScrollView } from 'react-native-gesture-handler'
 
 import { useActiveServer } from '~/components/activeServer'
-import { BookSearchItem } from '~/components/book'
-import { Heading, Input, Text } from '~/components/ui'
+import { BookSearchItem, IBookSearchItemFragment } from '~/components/book'
+import { ILibrarySearchItemFragment, LibrarySearchItem } from '~/components/library'
+import { ISeriesSearchItemFragment, SeriesSearchItem } from '~/components/series'
+import { Heading, Text } from '~/components/ui'
+
+import { prefetchBookSearch } from '../books/search[q]'
+
+const mediaQuery = graphql(`
+	query SearchMedia($filter: MediaFilterInput!) {
+		media(filter: $filter, pagination: { cursor: { limit: 10 } }) {
+			nodes {
+				id
+				...BookSearchItem
+			}
+			pageInfo {
+				__typename
+				... on CursorPaginationInfo {
+					nextCursor
+				}
+			}
+		}
+	}
+`)
+
+const seriesQuery = graphql(`
+	query SearchSeries($filter: SeriesFilterInput!) {
+		series(filter: $filter, pagination: { cursor: { limit: 10 } }) {
+			nodes {
+				id
+				...SeriesSearchItem
+			}
+			pageInfo {
+				__typename
+				... on CursorPaginationInfo {
+					nextCursor
+				}
+			}
+		}
+	}
+`)
+
+const libraryQuery = graphql(`
+	query SearchLibrary($search: String!) {
+		libraries(search: $search, pagination: { cursor: { limit: 10 } }) {
+			nodes {
+				id
+				...LibrarySearchItem
+			}
+			pageInfo {
+				__typename
+				... on CursorPaginationInfo {
+					nextCursor
+				}
+			}
+		}
+	}
+`)
 
 export default function Screen() {
 	const {
@@ -20,29 +78,49 @@ export default function Screen() {
 	const [searchQuery, setSearchQuery] = useState('')
 	const setQuery = debounce(setSearchQuery, 300)
 
-	const getBooks = useCallback(
-		() =>
-			sdk.media.get({
-				search: searchQuery,
-				limit: 10,
-			}),
-		[searchQuery, sdk],
-	)
+	const client = useQueryClient()
+	const navigation = useNavigation()
+
+	useLayoutEffect(() => {
+		navigation.setOptions({
+			headerShown: true,
+			headerSearchBarOptions: {
+				placeholder: 'Search',
+				onChangeText: (e: NativeSyntheticEvent<TextInputChangeEventData>) =>
+					setQuery(e.nativeEvent.text),
+			},
+		})
+	}, [navigation, setQuery])
+
+	const getBooks = useCallback(() => {
+		prefetchBookSearch(sdk, client, searchQuery)
+		return sdk.execute(mediaQuery, {
+			filter: {
+				_or: [
+					{ name: { contains: searchQuery } },
+					{ metadata: { title: { contains: searchQuery } } },
+				],
+			},
+		})
+	}, [sdk, searchQuery, client])
 
 	const getSeries = useCallback(
 		() =>
-			sdk.series.get({
-				search: searchQuery,
-				limit: 10,
+			sdk.execute(seriesQuery, {
+				filter: {
+					_or: [
+						{ name: { contains: searchQuery } },
+						{ metadata: { title: { contains: searchQuery } } },
+					],
+				},
 			}),
 		[searchQuery, sdk],
 	)
 
 	const getLibraries = useCallback(
 		() =>
-			sdk.library.get({
+			sdk.execute(libraryQuery, {
 				search: searchQuery,
-				limit: 10,
 			}),
 		[searchQuery, sdk],
 	)
@@ -52,7 +130,6 @@ export default function Screen() {
 		{ data: seriesResults, isLoading: isLoadingSeries },
 		{ data: librariesResults, isLoading: isLoadingLibraries },
 	] = useQueries({
-		context: QueryClientContext,
 		queries: [
 			{
 				queryKey: [sdk.media.keys.get, { serverID, query: searchQuery }],
@@ -72,75 +149,132 @@ export default function Screen() {
 		],
 	})
 
-	const sections = useMemo<SectionData[]>(
-		() =>
-			[
-				{
-					title: 'Books',
-					data: bookResults?.data || [],
-				},
-				{
-					title: 'Series',
-					data: seriesResults?.data || [],
-				},
-				{
-					title: 'Libraries',
-					data: librariesResults?.data || [],
-				},
-			].filter((section) => section.data.length),
-		[bookResults, seriesResults, librariesResults],
-	)
-
-	const renderSectionItem = useCallback<
-		SectionListRenderItem<Media | Series | Library, SectionData>
-	>(
-		({ item, section: { title: section } }) =>
-			match(section)
-				.with('Books', () => <BookSearchItem book={item as Media} search={searchQuery} />)
-				.with('Series', () => <Text>{item.name}</Text>)
-				.with('Libraries', () => <Text>{item.name}</Text>)
-				.otherwise(() => null),
-		[searchQuery],
-	)
-
-	const insets = useSafeAreaInsets()
-
 	const isLoading = isLoadingBooks || isLoadingSeries || isLoadingLibraries
-	const isInitial = (!sections.length && !searchQuery.length) || (isLoading && !sections.length)
+	const noResults = [
+		bookResults?.media.nodes,
+		seriesResults?.series.nodes,
+		librariesResults?.libraries.nodes,
+	].every((nodes) => !nodes?.length)
+	const isInitial = (noResults && !searchQuery.length) || (isLoading && noResults)
+
+	if (isInitial || noResults) {
+		const message = isInitial ? 'Enter a search query to get started' : 'Nothing matches your query'
+		return (
+			<View className="flex-1 items-center justify-center gap-4 bg-background p-4 tablet:p-7">
+				<Search className="h-8 w-8 text-foreground-muted" />
+
+				<View>
+					{!isInitial && <Heading>No Results Found</Heading>}
+					<Text className="text-foreground-muted">{message}</Text>
+				</View>
+			</View>
+		)
+	}
 
 	// TODO: Bring focus to the search input when the screen is focused, sorta like portal? Figure out what iOS does
 	// TODO: Animate list in/out instead
 	return (
-		<View
-			className="flex-1 items-start justify-start gap-5 bg-background p-4 tablet:p-7"
-			style={{
-				paddingTop: insets.top + 28,
-			}}
-		>
-			<Heading size="xl">Search</Heading>
-			<Input onChangeText={(text) => setQuery(text)} placeholder="Search" />
+		<ScrollView className="flex-1 bg-background p-4 tablet:p-7">
+			<View className="gap-4">
+				{bookResults?.media.nodes.length && (
+					<View>
+						<View className="mb-1 flex flex-row items-center justify-between">
+							<Heading size="default">Books</Heading>
+							{getHasMore(bookResults?.media.pageInfo) && (
+								<Link href={`/server/${serverID}/books/search[q]?q=${searchQuery}`}>
+									<Text>See More</Text>
+								</Link>
+							)}
+						</View>
 
-			<SectionList
-				style={{
-					opacity: isInitial ? 0 : 1,
-					flex: 1,
-					width: '100%',
-				}}
-				sections={sections}
-				renderSectionHeader={({ section: { title } }) => (
-					<Heading size="lg" className="text-foreground-muted">
-						{title}
-					</Heading>
+						<FlatList
+							data={chunk(bookResults?.media.nodes, 3)}
+							renderItem={({ item }) => {
+								return (
+									<View>
+										{item.map((book) => (
+											<BookSearchItem
+												key={book.id}
+												book={book as IBookSearchItemFragment}
+												search={searchQuery}
+											/>
+										))}
+									</View>
+								)
+							}}
+							keyExtractor={(item) => item.map((book) => book.id).join('-')}
+							horizontal
+						/>
+					</View>
 				)}
-				renderItem={renderSectionItem}
-				keyExtractor={(item) => item.id}
-				ListEmptyComponent={<Text>No results found</Text>}
-			/>
-		</View>
+
+				{seriesResults?.series.nodes.length && (
+					<View>
+						<View className="mb-1 flex flex-row items-center justify-between">
+							<Heading size="default">Series</Heading>
+							{/* {getHasMore(seriesResults?.series.pageInfo) && (
+									<Link href={`/server/${serverID}/books/search[q]?q=${searchQuery}`}>
+										See More
+									</Link>
+								)} */}
+						</View>
+
+						<FlatList
+							data={chunk(seriesResults?.series.nodes, 3)}
+							renderItem={({ item }) => {
+								return (
+									<View>
+										{item.map((series) => (
+											<SeriesSearchItem
+												key={series.id}
+												series={series as ISeriesSearchItemFragment}
+												search={searchQuery}
+											/>
+										))}
+									</View>
+								)
+							}}
+							keyExtractor={(item) => item.map((book) => book.id).join('-')}
+							horizontal
+						/>
+					</View>
+				)}
+
+				{librariesResults?.libraries.nodes.length && (
+					<View>
+						<View className="mb-1 flex flex-row items-center justify-between">
+							<Heading size="default">Libraries</Heading>
+							{/* {getHasMore(seriesResults?.series.pageInfo) && (
+									<Link href={`/server/${serverID}/books/search[q]?q=${searchQuery}`}>
+										See More
+									</Link>
+								)} */}
+						</View>
+
+						<FlatList
+							data={chunk(librariesResults?.libraries.nodes, 3)}
+							renderItem={({ item }) => {
+								return (
+									<View>
+										{item.map((library) => (
+											<LibrarySearchItem
+												key={library.id}
+												library={library as ILibrarySearchItemFragment}
+												search={searchQuery}
+											/>
+										))}
+									</View>
+								)
+							}}
+							keyExtractor={(item) => item.map((book) => book.id).join('-')}
+							horizontal
+						/>
+					</View>
+				)}
+			</View>
+		</ScrollView>
 	)
 }
 
-type SectionData = {
-	title: string
-	data: (Media | Series | Library)[]
-}
+const getHasMore = (pageInfo: Partial<PaginationInfo> | undefined): boolean =>
+	pageInfo?.__typename === 'CursorPaginationInfo' && pageInfo.nextCursor != null

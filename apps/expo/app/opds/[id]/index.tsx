@@ -1,4 +1,5 @@
-import { useQuery, useSDK } from '@stump/client'
+import { useSDK } from '@stump/client'
+import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import partition from 'lodash/partition'
 import { useCallback } from 'react'
@@ -24,20 +25,17 @@ export default function Screen() {
 		refetch,
 		isRefetching,
 		error,
-	} = useQuery(
-		[sdk.opds.keys.catalog, activeServer?.id],
-		() => {
+	} = useQuery({
+		queryKey: [sdk.opds.keys.catalog, activeServer?.id],
+		queryFn: () => {
 			if (activeServer.stumpOPDS) {
 				return sdk.opds.catalog()
 			} else {
 				return sdk.opds.feed(activeServer.url)
 			}
 		},
-		{
-			suspense: true,
-			useErrorBoundary: false,
-		},
-	)
+		throwOnError: false,
+	})
 
 	const searchURL = feed?.links.find((link) => link.rel === 'search' && link.templated)?.href
 
@@ -59,6 +57,18 @@ export default function Screen() {
 		},
 		[activeServer.id, router, searchURL],
 	)
+
+	// TODO: Do this instead
+	// useLayoutEffect(() => {
+	// 	navigation.setOptions({
+	// 		headerShown: true,
+	// 		headerSearchBarOptions: {
+	// 			placeholder: 'Search',
+	// 			onChangeText: (e: NativeSyntheticEvent<TextInputChangeEventData>) =>
+	// 				setQuery(e.nativeEvent.text),
+	// 		},
+	// 	})
+	// }, [navigation, setQuery])
 
 	if (!feed) return <MaybeErrorFeed error={error} />
 

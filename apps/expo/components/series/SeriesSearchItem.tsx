@@ -1,11 +1,9 @@
 import { useSDK } from '@stump/client'
 import { FragmentType, graphql, useFragment } from '@stump/graphql'
 import { useRouter } from 'expo-router'
-import pluralize from 'pluralize'
 import { View } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
 
-import { formatBytes } from '~/lib/format'
 import { useDisplay } from '~/lib/hooks'
 
 import { useActiveServer } from '../activeServer'
@@ -13,43 +11,45 @@ import { FasterImage } from '../Image'
 import { Text } from '../ui'
 
 const fragment = graphql(`
-	fragment BookSearchItem on Media {
+	fragment SeriesSearchItem on Series {
 		id
 		resolvedName
 		thumbnail {
 			url
 		}
-		size
-		pages
+		readCount
+		mediaCount
+		percentageCompleted
 	}
 `)
 
-export type IBookSearchItemFragment = FragmentType<typeof fragment>
+export type ISeriesSearchItemFragment = FragmentType<typeof fragment>
 
 type Props = {
 	/**
-	 * The query which was used that this book matches with. It will attempt to highlight
+	 * The query which was used that this series matches with. It will attempt to highlight
 	 * the matching text in the title and/or description
 	 */
 	search?: string
 	/**
-	 * The book to display
+	 * The series to display
 	 */
-	book: FragmentType<typeof fragment>
+	series: FragmentType<typeof fragment>
 }
 
-export default function BookSearchItem({ book }: Props) {
+export default function SeriesSearchItem({ series }: Props) {
 	const { sdk } = useSDK()
 	const {
 		activeServer: { id: serverID },
 	} = useActiveServer()
 	const { width } = useDisplay()
-	const data = useFragment(fragment, book)
+
+	const data = useFragment(fragment, series)
 	const router = useRouter()
 
 	return (
 		<Pressable
-			onPress={() => router.navigate(`/server/${serverID}/books/${data.id}`)}
+			onPress={() => router.navigate(`/server/${serverID}/series/${data.id}`)}
 			style={{
 				width: width * 0.75,
 			}}
@@ -71,7 +71,7 @@ export default function BookSearchItem({ book }: Props) {
 					<Text>{data.resolvedName}</Text>
 
 					<Text className="text-foreground-muted">
-						{formatBytes(data.size)} • {data.pages} {pluralize('page', data.pages)}
+						{data.readCount}/{data.mediaCount} books • {data.percentageCompleted}%
 					</Text>
 				</View>
 			</View>

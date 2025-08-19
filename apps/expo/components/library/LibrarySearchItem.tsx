@@ -1,11 +1,9 @@
 import { useSDK } from '@stump/client'
 import { FragmentType, graphql, useFragment } from '@stump/graphql'
 import { useRouter } from 'expo-router'
-import pluralize from 'pluralize'
 import { View } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
 
-import { formatBytes } from '~/lib/format'
 import { useDisplay } from '~/lib/hooks'
 
 import { useActiveServer } from '../activeServer'
@@ -13,43 +11,41 @@ import { FasterImage } from '../Image'
 import { Text } from '../ui'
 
 const fragment = graphql(`
-	fragment BookSearchItem on Media {
+	fragment LibrarySearchItem on Library {
 		id
-		resolvedName
+		name
 		thumbnail {
 			url
 		}
-		size
-		pages
 	}
 `)
 
-export type IBookSearchItemFragment = FragmentType<typeof fragment>
+export type ILibrarySearchItemFragment = FragmentType<typeof fragment>
 
 type Props = {
 	/**
-	 * The query which was used that this book matches with. It will attempt to highlight
+	 * The query which was used that this library matches with. It will attempt to highlight
 	 * the matching text in the title and/or description
 	 */
 	search?: string
 	/**
-	 * The book to display
+	 * The library to display
 	 */
-	book: FragmentType<typeof fragment>
+	library: FragmentType<typeof fragment>
 }
 
-export default function BookSearchItem({ book }: Props) {
+export default function LibrarySearchItem({ library }: Props) {
 	const { sdk } = useSDK()
 	const {
 		activeServer: { id: serverID },
 	} = useActiveServer()
 	const { width } = useDisplay()
-	const data = useFragment(fragment, book)
+	const data = useFragment(fragment, library)
 	const router = useRouter()
 
 	return (
 		<Pressable
-			onPress={() => router.navigate(`/server/${serverID}/books/${data.id}`)}
+			onPress={() => router.navigate(`/server/${serverID}/libraries/${data.id}`)}
 			style={{
 				width: width * 0.75,
 			}}
@@ -67,12 +63,8 @@ export default function BookSearchItem({ book }: Props) {
 					style={{ width: 75, height: 75 / (2 / 3) }}
 				/>
 
-				<View className="flex flex-1 flex-col gap-1">
-					<Text>{data.resolvedName}</Text>
-
-					<Text className="text-foreground-muted">
-						{formatBytes(data.size)} • {data.pages} {pluralize('page', data.pages)}
-					</Text>
+				<View className="flex-1">
+					<Text>{data.name}</Text>
 				</View>
 			</View>
 		</Pressable>
