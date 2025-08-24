@@ -31,6 +31,10 @@ type Props = {
 	 * The controls for adjusting the layout, i.e. GRID or TABLE
 	 */
 	layoutControls?: React.ReactNode
+	/**
+	 * The controls for adjusting the size of cards/items
+	 */
+	sizeControls?: React.ReactNode
 	navOffset?: boolean
 }
 
@@ -42,6 +46,7 @@ export default function FilterHeader({
 	layoutControls,
 	orderControls,
 	filterControls,
+	sizeControls,
 	navOffset,
 }: Props) {
 	const isMobile = useMediaMatch('(max-width: 768px)')
@@ -60,7 +65,7 @@ export default function FilterHeader({
 			className={cn(
 				'sticky z-10 flex h-12 w-full shrink-0 justify-between gap-2 border-b border-edge px-4 md:top-0',
 				{
-					'bg-background': isSticky,
+					'bg-background': isSticky || !isMobile,
 				},
 				navOffset ? 'top-12' : 'top-0',
 			)}
@@ -80,6 +85,8 @@ export default function FilterHeader({
 			/>
 
 			<div className="flex items-center gap-4">
+				{sizeControls}
+
 				<div className="flex items-center gap-x-2">
 					{orderControls}
 					{filterControls}

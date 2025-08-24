@@ -650,6 +650,15 @@ enum InheritPermissionValue {
 }
 
 
+"""
+The different types of layouts a client-side interface might present to a user
+for a collection of items
+"""
+enum InterfaceLayout {
+	GRID
+	TABLE
+}
+
 "A scalar that can represent any JSON value."
 scalar JSON
 
@@ -1123,6 +1132,11 @@ input MediaOrderByField {
 	direction: OrderDirection!
 }
 
+input MediaProgressInput @oneOf {
+	epub: EpubProgressInput
+	paged: PagedProgressInput
+}
+
 type Mutation {
 	createApiKey(input: ApikeyInput!): CreatedAPIKey!
 	updateApiKey(id: Int!, input: ApikeyInput!): Apikey!
@@ -1145,14 +1159,6 @@ type Mutation {
 	updateNotifier(id: Int!, input: NotifierInput!): Notifier!
 	deleteNotifier(id: Int!): Notifier!
 	"""
-	Update the progress of an epub for a user. If the percentage is 1 or greater, the epub is
-	considered finished and the active session is deleted and a finished session is created.
-	
-	If the epub is already finished and the percentage is 1 or greater, the old finished
-	session is deleted and a new one is created.
-	"""
-	updateEpubProgress(id: ID!, input: EpubProgressInput!): ReadingProgressOutput!
-	"""
 	Create or update a bookmark for a user. If a bookmark already exists for the given media
 	and epubcfi, the preview content is updated.
 	"""
@@ -1170,7 +1176,7 @@ type Mutation {
 	"""
 	updateMediaThumbnail(id: ID!, input: PageBasedThumbnailInput!): Media!
 	deleteMediaProgress(id: ID!): Media!
-	updateMediaProgress(id: ID!, page: Int, elapsedSeconds: Int): ReadingProgressOutput!
+	updateMediaProgress(id: ID!, input: MediaProgressInput!): ReadingProgressOutput!
 	markMediaAsComplete(id: ID!, isComplete: Boolean!, page: Int): FinishedReadingSessionModel
 	"""
 	Delete media and series from a library that match one of the following conditions:
@@ -1436,6 +1442,11 @@ height and a width.
 type PageDimension {
 	height: Int!
 	width: Int!
+}
+
+input PagedProgressInput {
+	page: Int!
+	elapsedSeconds: Int
 }
 
 type PaginatedDirectoryListingResponse {
@@ -2176,7 +2187,7 @@ input UpdateUserInput {
 
 input UpdateUserPreferencesInput {
 	locale: String!
-	preferredLayoutMode: String!
+	preferredLayoutMode: InterfaceLayout!
 	primaryNavigationMode: String!
 	layoutMaxWidthPx: Int
 	appTheme: String!
@@ -2316,7 +2327,7 @@ type UserPermissionStruct {
 }
 
 type UserPreferences {
-	preferredLayoutMode: String!
+	preferredLayoutMode: InterfaceLayout!
 	locale: String!
 	appTheme: String!
 	appFont: SupportedFont!
