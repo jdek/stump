@@ -9,6 +9,8 @@ import paths from '../../paths'
 import pluralizeStat from '../../utils/pluralize'
 import { EntityCard } from '../entity'
 
+// TODO(graphql): Use fragment!
+
 export interface SeriesCardData {
 	id: string
 	resolvedName: string

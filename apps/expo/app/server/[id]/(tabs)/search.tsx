@@ -132,17 +132,17 @@ export default function Screen() {
 	] = useQueries({
 		queries: [
 			{
-				queryKey: [sdk.media.keys.get, { serverID, query: searchQuery }],
+				queryKey: ['searchBooks', { serverID, query: searchQuery }],
 				queryFn: getBooks,
 				enabled: !!searchQuery,
 			},
 			{
-				queryKey: [sdk.series.keys.get, { serverID, query: searchQuery }],
+				queryKey: ['searchSeries', { serverID, query: searchQuery }],
 				queryFn: getSeries,
 				enabled: !!searchQuery,
 			},
 			{
-				queryKey: [sdk.library.keys.get, { serverID, query: searchQuery }],
+				queryKey: ['searchLibraries', { serverID, query: searchQuery }],
 				queryFn: getLibraries,
 				enabled: !!searchQuery,
 			},

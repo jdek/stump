@@ -3,12 +3,14 @@ export const STUMP_SAVE_BASIC_SESSION_HEADER = 'X-Stump-Save-Session'
 // TODO(prettier): Figure out why key sort isn't working here
 
 export const cacheKeys = {
+	claimStatus: 'claimStatus',
 	series: 'series',
 	seriesBooks: 'seriesBooks',
 	seriesById: 'seriesById',
 	seriesLinks: 'seriesLinks',
 	recentlyAddedSeries: 'recentlyAddedSeries',
 	libraries: 'libraries',
+	inProgress: 'continueReading',
 	libraryById: 'libraryById',
 	lastVisitedLibrary: 'lastVisitedLibrary',
 	libraryBooks: 'libraryBooks',
@@ -48,4 +50,5 @@ export const cacheKeys = {
 	navigationArrangement: 'navigationArrangement',
 	bookClubs: 'bookClubs',
 	bookClubById: 'bookClubById',
+	bookClubBySlug: 'bookClubBySlug',
 } as const

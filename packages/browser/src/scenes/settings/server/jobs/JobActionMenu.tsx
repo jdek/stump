@@ -4,8 +4,8 @@ import { graphql } from '@stump/graphql'
 import { useQueryClient } from '@tanstack/react-query'
 import { Ban, Database, FileClock, ListX, MoreVertical, Trash2 } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
-import { toast } from 'sonner'
 import { useNavigate } from 'react-router'
+import { toast } from 'sonner'
 
 import paths from '@/paths'
 

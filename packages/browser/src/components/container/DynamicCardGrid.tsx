@@ -1,5 +1,6 @@
 import { forwardRef, memo } from 'react'
-import { GridItemProps, GridListProps } from 'react-virtuoso'
+import AutoSizer from 'react-virtualized-auto-sizer'
+import { GridItemProps, GridListProps, VirtuosoGrid } from 'react-virtuoso'
 
 import { GRID_GAP, sizeToPercentageWidth, useGridSize } from '@/components/container/useGridSize'
 
@@ -23,6 +24,28 @@ function DynamicCardGrid({ count, renderItem }: Props) {
 	)
 }
 export default memo(DynamicCardGrid)
+
+type VirtualizedProps = Props & {
+	onEndReached?: () => void
+}
+
+export const VirtualizedCardGrid = ({ count, renderItem, onEndReached }: VirtualizedProps) => (
+	<AutoSizer>
+		{({ height, width }) => (
+			<VirtuosoGrid
+				style={{ height, width }}
+				totalCount={count}
+				components={{
+					List,
+					Item,
+				}}
+				itemContent={(index) => renderItem(index)}
+				endReached={onEndReached}
+				increaseViewportBy={5 * (320 / 3)}
+			/>
+		)}
+	</AutoSizer>
+)
 
 const List = forwardRef<HTMLDivElement, GridListProps>(({ style, children, ...props }, ref) => (
 	<div

@@ -27,6 +27,7 @@ sea-orm.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
+slugify.workspace = true
 strum.workspace = true
 stump_core = { path = "../../core" }
 tokio.workspace = true

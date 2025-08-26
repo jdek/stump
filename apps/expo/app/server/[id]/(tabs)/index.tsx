@@ -1,4 +1,4 @@
-import { invalidateQueries, useSDK } from '@stump/client'
+import { invalidateQueries } from '@stump/client'
 import { useCallback, useState } from 'react'
 import { View } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
@@ -7,14 +7,12 @@ import { ContinueReading, RecentlyAddedBooks } from '~/components/activeServer/h
 import RefreshControl from '~/components/RefreshControl'
 
 export default function Screen() {
-	const { sdk } = useSDK()
-
 	const [refreshing, setRefreshing] = useState(false)
 	const onRefresh = useCallback(async () => {
 		setRefreshing(true)
-		await invalidateQueries({ keys: [sdk.media.keys.inProgress], exact: false })
+		await invalidateQueries({ keys: ['continueReading'], exact: false })
 		setRefreshing(false)
-	}, [sdk])
+	}, [])
 
 	return (
 		<ScrollView

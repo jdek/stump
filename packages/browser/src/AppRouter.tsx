@@ -52,7 +52,7 @@ export function AppRouter({ basePath }: AppRouterProps = {}) {
 						<Route path="libraries/*" element={<LibraryRouter />} />
 						<Route path="series/*" element={<SeriesRouter />} />
 						<Route path="books/*" element={<BookRouter />} />
-						<Route path="book-clubs/*" element={<BookClubRouter />} />
+						<Route path="clubs/*" element={<BookClubRouter />} />
 						<Route path="/smart-lists/*" element={<SmartListRouter />} />
 						<Route path="settings/*" element={<SettingsRouter />} />
 					</Route>

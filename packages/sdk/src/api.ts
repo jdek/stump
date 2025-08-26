@@ -4,25 +4,14 @@ import axios, { AxiosInstance, AxiosRequestConfig } from 'axios'
 import { AuthenticationMethod, Configuration } from './configuration'
 import { cacheKeys } from './constants'
 import {
-	APIKeyAPI,
 	AuthAPI,
-	BookClubAPI,
-	EmailerAPI,
 	EpubAPI,
-	FilesystemAPI,
-	JobAPI,
 	JwtTokenPair,
 	LibraryAPI,
-	LogAPI,
 	MediaAPI,
-	MetadataAPI,
 	OPDSV2API,
 	SeriesAPI,
 	ServerAPI,
-	SmartListAPI,
-	TagAPI,
-	UploadAPI,
-	UserAPI,
 } from './controllers'
 import {
 	attemptWebsocketConnect,
@@ -394,45 +383,10 @@ export class Api {
 	}
 
 	/**
-	 * Get an instance for the APIKeyAPI
-	 */
-	get apiKey(): APIKeyAPI {
-		return new APIKeyAPI(this)
-	}
-
-	/**
-	 * Get an instance for the BookClubAPI
-	 */
-	get club(): BookClubAPI {
-		return new BookClubAPI(this)
-	}
-
-	/**
-	 * Get an instance for the EmailerAPI
-	 */
-	get emailer(): EmailerAPI {
-		return new EmailerAPI(this)
-	}
-
-	/**
 	 * Get an instance for the EpubAPI
 	 */
 	get epub(): EpubAPI {
 		return new EpubAPI(this)
-	}
-
-	/**
-	 * Get an instance for the FilesystemAPI
-	 */
-	get filesystem(): FilesystemAPI {
-		return new FilesystemAPI(this)
-	}
-
-	/**
-	 * Get an instance for the JobAPI
-	 */
-	get job(): JobAPI {
-		return new JobAPI(this)
 	}
 
 	/**
@@ -443,24 +397,10 @@ export class Api {
 	}
 
 	/**
-	 * Get an instance for the LogAPI
-	 */
-	get log(): LogAPI {
-		return new LogAPI(this)
-	}
-
-	/**
 	 * Get an instance for the MediaAPI
 	 */
 	get media(): MediaAPI {
 		return new MediaAPI(this)
-	}
-
-	/**
-	 * Get an instance for the MetadataAPI
-	 */
-	get metadata(): MetadataAPI {
-		return new MetadataAPI(this)
 	}
 
 	get opds(): OPDSV2API {
@@ -480,31 +420,4 @@ export class Api {
 	get server(): ServerAPI {
 		return new ServerAPI(this)
 	}
-
-	/**
-	 * Get an instance for the SmartListAPI
-	 */
-	get smartlist(): SmartListAPI {
-		return new SmartListAPI(this)
-	}
-
-	/**
-	 * Get an instance for the TagAPI
-	 */
-	get tag(): TagAPI {
-		return new TagAPI(this)
-	}
-
-	get upload(): UploadAPI {
-		return new UploadAPI(this)
-	}
-
-	/**
-	 * Get an instance for the UserAPI
-	 */
-	get user(): UserAPI {
-		return new UserAPI(this)
-	}
 }
-
-// TODO: look into https://github.com/TanStack/query/issues/3228#issuecomment-2088266007

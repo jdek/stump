@@ -4,12 +4,15 @@ use models::{
 	shared::book_club::{BookClubBook, BookClubMemberRole, BookClubMemberRoleSpec},
 };
 use sea_orm::{prelude::*, Set};
+use slugify::slugify;
 
 #[derive(Debug, InputObject)]
 pub struct CreateBookClubInput {
 	pub name: String,
+	pub slug: Option<String>,
 	#[graphql(default)]
 	pub is_private: bool,
+	pub description: Option<String>,
 	pub member_role_spec: Option<Json<BookClubMemberRoleSpec>>,
 	pub creator_hide_progress: bool,
 	pub creator_display_name: Option<String>,
@@ -21,12 +24,18 @@ impl CreateBookClubInput {
 		user: &AuthUser,
 	) -> (book_club::ActiveModel, book_club_member::ActiveModel) {
 		let id = Uuid::new_v4().to_string();
+		let slug = self
+			.slug
+			.map(|s| slugify!(s.as_str()))
+			.unwrap_or_else(|| slugify!(self.name.as_str()));
 
 		let club = book_club::ActiveModel {
 			id: Set(id.clone()),
 			name: Set(self.name),
+			description: Set(self.description),
 			is_private: Set(self.is_private),
 			member_role_spec: Set(self.member_role_spec.map(|spec| spec.0)),
+			slug: Set(slug),
 			..Default::default()
 		};
 
@@ -38,10 +47,24 @@ impl CreateBookClubInput {
 			display_name: Set(self.creator_display_name),
 			user_id: Set(user.id.clone()),
 			book_club_id: Set(id),
-			..Default::default()
+			private_membership: Set(self.creator_hide_progress),
 		};
 
 		(club, owning_member)
+	}
+
+	pub fn validate(&self) -> Result<(), InputValueError<CreateBookClubInput>> {
+		if let Some(slug) = &self.slug {
+			if slug.is_empty() {
+				return Err(InputValueError::custom("Slug cannot be empty"));
+			} else if slugify!(slug) != *slug {
+				return Err(InputValueError::custom(
+					"Slug can only contain lowercase letters, numbers, and hyphens",
+				));
+			}
+		}
+
+		Ok(())
 	}
 }
 
@@ -168,6 +191,8 @@ mod tests {
 	fn test_into_active_model() {
 		let input = CreateBookClubInput {
 			name: "Test".to_string(),
+			slug: None,
+			description: None,
 			is_private: false,
 			member_role_spec: None,
 			creator_hide_progress: false,

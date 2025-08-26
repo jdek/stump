@@ -17,6 +17,7 @@ const query = graphql(`
 		bookClubs {
 			id
 			name
+			slug
 			emoji
 			members {
 				id
@@ -42,7 +43,7 @@ export default function BookClubSideBarSection({
 	const { sdk } = useSDK()
 	const {
 		data: { bookClubs },
-	} = useSuspenseGraphQL(query, sdk.cacheKey('bookClubs'))
+	} = useSuspenseGraphQL(query, sdk.cacheKey('bookClubs', ['sidebar']))
 
 	const isCurrentBookClub = (id: string) => location.pathname.startsWith(paths.librarySeries(id))
 
@@ -73,7 +74,7 @@ export default function BookClubSideBarSection({
 			return (
 				<SideBarButtonLink
 					key={bookClub.id}
-					to={paths.bookClub(bookClub.id)}
+					to={paths.bookClub(bookClub.slug)}
 					isActive={isCurrentBookClub(bookClub.id)}
 					leftContent={canChange ? leftContent : undefined}
 					className="pl-2 pr-0"

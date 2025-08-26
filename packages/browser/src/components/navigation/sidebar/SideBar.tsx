@@ -16,7 +16,7 @@ import { match } from 'ts-pattern'
 
 import { useAppContext, useRouterContext } from '@/context'
 import { useTheme } from '@/hooks'
-import { usePathActive, usePaths } from '@/paths'
+import { usePaths } from '@/paths'
 import { usePrefetchHomeScene } from '@/scenes/home'
 import { useAppStore } from '@/stores'
 
@@ -146,7 +146,7 @@ export default function SideBar({ asChild, hidden }: Props) {
 					</Suspense>
 				))
 				.otherwise(() => null),
-		[t, location.pathname, prefetchHome, isMobile, paths],
+		[t, location.pathname, prefetchHome, isMobile, paths, basePath],
 	)
 
 	const sections = useMemo(

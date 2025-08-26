@@ -1,14 +1,17 @@
-use async_graphql::SimpleObject;
-use sea_orm::{
-	entity::prelude::*,
-	sea_query::{Query, SelectStatement},
-	Condition,
-};
-
 use crate::{
 	entity::{book_club, book_club_member},
 	shared::book_club::{BookClubMemberRole, BookClubMemberRoleSpec},
 };
+use async_graphql::SimpleObject;
+use chrono::Utc;
+use sea_orm::{
+	entity::prelude::*,
+	prelude::async_trait::async_trait,
+	sea_query::{Query, SelectStatement},
+	ActiveValue::Set,
+	Condition,
+};
+use slugify::slugify;
 
 use super::user::AuthUser;
 
@@ -18,8 +21,10 @@ use super::user::AuthUser;
 pub struct Model {
 	#[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
 	pub id: String,
-	#[sea_orm(column_type = "Text", unique)]
+	#[sea_orm(column_type = "Text")]
 	pub name: String,
+	#[sea_orm(column_type = "Text", unique)]
+	pub slug: String,
 	#[sea_orm(column_type = "Text", nullable)]
 	pub description: Option<String>,
 	pub is_private: bool,
@@ -72,6 +77,12 @@ impl Entity {
 		Entity::find()
 			.filter(Self::filter_for_user(user))
 			.filter(book_club::Column::Id.eq(id))
+	}
+
+	pub fn find_by_slug_and_user(slug: &str, user: &AuthUser) -> Select<Entity> {
+		Entity::find()
+			.filter(Self::filter_for_user(user))
+			.filter(book_club::Column::Slug.eq(slug))
 	}
 
 	pub fn find_all_for_user(all: bool, user: &AuthUser) -> Select<Entity> {
@@ -149,7 +160,31 @@ impl Related<super::book_club_schedule::Entity> for Entity {
 	}
 }
 
-impl ActiveModelBehavior for ActiveModel {}
+#[async_trait]
+impl ActiveModelBehavior for ActiveModel {
+	async fn before_save<C>(mut self, _db: &C, insert: bool) -> Result<Self, DbErr>
+	where
+		C: ConnectionTrait,
+	{
+		if insert {
+			if self.id.is_not_set() {
+				self.id = Set(uuid::Uuid::new_v4().to_string());
+			}
+			if self.slug.is_not_set() {
+				let slug = slugify!(self.name.as_ref().as_str());
+				self.slug = Set(slug);
+			}
+			if self.created_at.is_not_set() {
+				self.created_at = Set(DateTimeWithTimeZone::from(Utc::now()));
+			}
+			if self.member_role_spec.is_not_set() {
+				self.member_role_spec = Set(Some(BookClubMemberRoleSpec::default()));
+			}
+		}
+
+		Ok(self)
+	}
+}
 
 #[cfg(test)]
 mod tests {

@@ -1,13 +1,3 @@
-import { ButtonOrLink, Card } from '@stump/components'
-import { BookClubDiscussionMessage, User } from '@stump/sdk'
-import { Navigate, useSearchParams } from 'react-router-dom'
-
-import { useBookClubContext } from '@/components/bookClub'
-import GenericEmptyState from '@/components/GenericEmptyState'
-import paths from '@/paths'
-
-import ChatMessage from './ChatMessage'
-
 export default function BookClubDiscussionScene() {
 	// TODO(graphql): Fix me
 	return null
@@ -57,41 +47,41 @@ export default function BookClubDiscussionScene() {
 	// )
 }
 
-const mockMessages: BookClubDiscussionMessage[] = [
-	{
-		child_messages: [
-			{
-				content: 'I know right?!?!',
-				id: '2',
-				is_top_message: false,
-				member: {
-					hide_progress: false,
-					id: '1',
-					is_creator: false,
-					private_membership: false,
-					role: 'MEMBER',
-					user: {
-						id: '1',
-						username: 'Stede Bonnet',
-					} as User,
-				},
-				timestamp: new Date().toString(),
-			},
-		],
-		content: 'WOW! Did you see that coming?? I cannot believe that happened!!!!',
-		id: '1',
-		is_top_message: true,
-		member: {
-			hide_progress: false,
-			id: '2',
-			is_creator: false,
-			private_membership: false,
-			role: 'MEMBER',
-			user: {
-				id: '1',
-				username: 'Wee John',
-			} as User,
-		},
-		timestamp: new Date().toString(),
-	},
-]
+// const mockMessages: BookClubDiscussionMessage[] = [
+// 	{
+// 		child_messages: [
+// 			{
+// 				content: 'I know right?!?!',
+// 				id: '2',
+// 				is_top_message: false,
+// 				member: {
+// 					hide_progress: false,
+// 					id: '1',
+// 					is_creator: false,
+// 					private_membership: false,
+// 					role: 'MEMBER',
+// 					user: {
+// 						id: '1',
+// 						username: 'Stede Bonnet',
+// 					} as User,
+// 				},
+// 				timestamp: new Date().toString(),
+// 			},
+// 		],
+// 		content: 'WOW! Did you see that coming?? I cannot believe that happened!!!!',
+// 		id: '1',
+// 		is_top_message: true,
+// 		member: {
+// 			hide_progress: false,
+// 			id: '2',
+// 			is_creator: false,
+// 			private_membership: false,
+// 			role: 'MEMBER',
+// 			user: {
+// 				id: '1',
+// 				username: 'Wee John',
+// 			} as User,
+// 		},
+// 		timestamp: new Date().toString(),
+// 	},
+// ]

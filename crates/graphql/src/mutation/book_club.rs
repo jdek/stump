@@ -7,7 +7,7 @@ use sea_orm::{prelude::*, IntoActiveModel, TransactionTrait};
 
 use crate::{
 	data::{AuthContext, CoreContext},
-	guard::PermissionGuard,
+	guard::{BookClubRoleGuard, PermissionGuard},
 	input::book_club::{CreateBookClubInput, UpdateBookClubInput},
 	object::book_club::BookClub,
 };
@@ -26,6 +26,8 @@ impl BookClubMutation {
 		let AuthContext { user, .. } = ctx.data::<AuthContext>()?;
 		let conn = ctx.data::<CoreContext>()?.conn.as_ref();
 
+		// input.validate()?;
+
 		let txn = conn.begin().await?;
 
 		let (club, member) = input.into_active_model(user);
@@ -38,6 +40,7 @@ impl BookClubMutation {
 		Ok(created_club.into())
 	}
 
+	#[graphql(guard = "BookClubRoleGuard::new(id.as_ref(), BookClubMemberRole::Admin)")]
 	async fn update_book_club(
 		&self,
 		ctx: &Context<'_>,
@@ -54,6 +57,20 @@ impl BookClubMutation {
 		let active_model = input.apply(book_club.into_active_model());
 		let updated_club = active_model.update(conn).await?;
 		Ok(updated_club.into())
+	}
+
+	#[graphql(guard = "BookClubRoleGuard::new(id.as_ref(), BookClubMemberRole::Creator)")]
+	async fn delete_book_club(&self, ctx: &Context<'_>, id: ID) -> Result<BookClub> {
+		let AuthContext { user, .. } = ctx.data::<AuthContext>()?;
+		let conn = ctx.data::<CoreContext>()?.conn.as_ref();
+
+		let book_club = get_book_club_for_admin(user, &id, conn)
+			.await?
+			.ok_or("Book club not found or you lack permission to update")?;
+
+		book_club.clone().delete(conn).await?;
+
+		Ok(book_club.into())
 	}
 }
 
@@ -82,6 +99,7 @@ mod tests {
 		book_club::Model {
 			id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa".to_string(),
 			name: "Test".to_string(),
+			slug: "test".to_string(),
 			description: None,
 			is_private: false,
 			member_role_spec: None,

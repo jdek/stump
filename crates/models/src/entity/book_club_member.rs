@@ -144,6 +144,14 @@ impl Entity {
 		Self::find_members_accessible_to_user(user)
 			.filter(Column::BookClubId.eq(book_club_id))
 	}
+
+	pub fn find_by_club_for_user(user: &AuthUser, book_club_id: &str) -> Select<Self> {
+		Self::find().filter(
+			Column::BookClubId
+				.eq(book_club_id)
+				.and(Column::UserId.eq(user.id.clone())),
+		)
+	}
 }
 
 #[cfg(test)]

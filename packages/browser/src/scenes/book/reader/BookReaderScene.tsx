@@ -122,9 +122,9 @@ function BookReaderScene({ book }: Props) {
 	 */
 	useEffect(() => {
 		return () => {
-			invalidateQueries({ exact: false, keys: [sdk.media.keys.inProgress] })
+			invalidateQueries({ exact: false, keys: [sdk.cacheKeys.inProgress] })
 		}
-	}, [sdk.media])
+	}, [sdk.cacheKeys.inProgress])
 
 	/**
 	 * An effect to update the read progress whenever the page changes in the URL

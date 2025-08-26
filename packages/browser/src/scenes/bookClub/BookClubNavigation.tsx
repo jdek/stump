@@ -12,10 +12,7 @@ export default function BookClubNavigation() {
 	const {
 		preferences: { primaryNavigationMode, layoutMaxWidthPx },
 	} = usePreferences()
-	const {
-		bookClub: { id },
-		viewerIsMember,
-	} = useBookClubContext()
+	const { viewerIsMember } = useBookClubContext()
 	// const { prefetch } = usePrefetchClubChat({ id })
 	// TODO(graphql): Fix
 	const prefetch = noop
@@ -23,7 +20,7 @@ export default function BookClubNavigation() {
 	const tabs = useMemo(() => {
 		const base = [
 			{
-				isActive: location.pathname.match(/\/book-clubs\/[^/]+\/?(home)?$/),
+				isActive: location.pathname.match(/\/clubs\/[^/]+\/?(home)?$/),
 				label: 'Home',
 				to: '.',
 			},
@@ -36,18 +33,18 @@ export default function BookClubNavigation() {
 		return [
 			...base,
 			{
-				isActive: location.pathname.match(/\/book-clubs\/[^/]+\/discussion(\/.*)?$/),
+				isActive: location.pathname.match(/\/clubs\/[^/]+\/discussion(\/.*)?$/),
 				label: 'Discussion',
 				onHover: () => prefetch(),
 				to: 'discussion',
 			},
 			{
-				isActive: location.pathname.match(/\/book-clubs\/[^/]+\/members(\/.*)?$/),
+				isActive: location.pathname.match(/\/clubs\/[^/]+\/members(\/.*)?$/),
 				label: 'Members',
 				to: 'members',
 			},
 			{
-				isActive: location.pathname.match(/\/book-clubs\/[^/]+\/settings(\/.*)?$/),
+				isActive: location.pathname.match(/\/clubs\/[^/]+\/settings(\/.*)?$/),
 				label: 'Settings',
 				to: 'settings',
 			},

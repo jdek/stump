@@ -18,7 +18,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AutoSizer from 'react-virtualized-auto-sizer'
 import { toast } from 'sonner'
 
-import { ImageReaderBookRef } from '@/components/readers/imageBased/context'
 import { useTheme } from '@/hooks'
 import { useBookPreferences } from '@/scenes/book/reader/useBookPreferences'
 
@@ -148,7 +147,7 @@ export default function EpubJsReader({ id, isIncognito }: EpubJsReaderProps) {
 	const [currentLocation, setCurrentLocation] = useState<EpubLocationState>()
 
 	const { bookPreferences } = useBookPreferences({
-		book: ebook.media || ({} as ImageReaderBookRef),
+		book: ebook.media,
 	})
 
 	const existingBookmarks = useMemo(
@@ -329,6 +328,19 @@ export default function EpubJsReader({ id, isIncognito }: EpubJsReaderProps) {
 			}
 		})
 	}, [book, applyEpubPreferences, bookPreferences, handleLocationChange, isIncognito, ebook])
+
+	// I'm hopeful this solves: https://github.com/stumpapp/stump/issues/726
+	// Honestly though epub.js is such a migraine that I'm OK just waiting until
+	// I have the time to migrate off of it
+	useEffect(
+		() => {
+			return () => {
+				rendition?.destroy()
+			}
+		},
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[],
+	)
 
 	// TODO: this needs to have fullscreen as an effect dependency
 	/**

@@ -22,6 +22,8 @@ use strum::Display;
 	DeriveActiveEnum,
 	Enum,
 	Display,
+	PartialOrd,
+	Ord,
 )]
 #[sea_orm(
 	rs_type = "String",

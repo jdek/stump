@@ -80,15 +80,15 @@ export function useCoreEvent({ liveRefetch, onConnectionWithServerChanged }: Par
 		[store, client, sdk, liveRefetch],
 	)
 
-	const [socket, dispose] = useGraphQLSubscription(subscription, {
+	const [, dispose] = useGraphQLSubscription(subscription, {
 		onMessage: (payload) => onPayloadReceived(payload),
 		onConnected: () => {
-			console.log('Connected to GraphQL subscription')
+			// console.info('Connected to GraphQL subscription')
 			onConnectionWithServerChanged?.(true)
 		},
-		// TODO: Figure this out
+		// TODO(grpahql): Figure this out
 		onDisconnected: () => {
-			console.log('Disconnected from GraphQL subscription')
+			console.warn('Disconnected from GraphQL subscription')
 			// dispose()
 			// setTimeout(() => {
 			// 	if (socket?.readyState !== WebSocket.OPEN) {

@@ -1,12 +1,5 @@
-import { ButtonOrLink, cx } from '@stump/components'
-
-import { SceneContainer } from '@/components/container'
-import GenericEmptyState from '@/components/GenericEmptyState'
-import { useAppContext } from '@/context'
-import paths from '@/paths'
-
 export default function BookClubExploreScene() {
-	const { checkPermission } = useAppContext()
+	// const { checkPermission } = useAppContext()
 
 	// TODO(graphql): Fix me
 

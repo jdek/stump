@@ -10,6 +10,7 @@ import TagList from '@/components/tags/TagList'
 type Props = {
 	library: Library
 }
+// TODO(sea-orm): Fix me
 export default function LibraryOverviewTitleSection({ library }: Props) {
 	const { sdk } = useSDK()
 	const isAtLeastMedium = useMediaMatch('(min-width: 768px)')

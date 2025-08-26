@@ -1,11 +1,12 @@
 use super::{book_club_member::BookClubMember, book_club_schedule::BookClubSchedule};
 use crate::data::{AuthContext, CoreContext};
 use crate::object::book_club_invitation::BookClubInvitation;
-use async_graphql::{ComplexObject, Context, Result, SimpleObject};
+use async_graphql::{ComplexObject, Context, Json, Result, SimpleObject};
 use models::entity::{
 	book_club, book_club_book, book_club_invitation, book_club_member, book_club_schedule,
 };
-use models::shared::book_club::BookClubBook;
+use models::shared::book_club::{BookClubBook, BookClubMemberRoleSpec};
+use sea_orm::prelude::*;
 
 #[derive(Debug, SimpleObject)]
 #[graphql(complex)]
@@ -22,6 +23,22 @@ impl From<book_club::Model> for BookClub {
 
 #[ComplexObject]
 impl BookClub {
+	async fn creator(&self, ctx: &Context<'_>) -> Result<BookClubMember> {
+		let conn = ctx.data::<CoreContext>()?.conn.as_ref();
+
+		let creator = book_club_member::Entity::find()
+			.filter(
+				book_club_member::Column::BookClubId
+					.eq(self.model.id.clone())
+					.and(book_club_member::Column::IsCreator.eq(true)),
+			)
+			.one(conn)
+			.await?
+			.ok_or_else(|| async_graphql::Error::new("Book club creator not found"))?;
+
+		Ok(BookClubMember::from(creator))
+	}
+
 	// TODO(book-clubs): Support multiple books at once?
 	async fn current_book(&self, ctx: &Context<'_>) -> Result<Option<BookClubBook>> {
 		let conn = ctx.data::<CoreContext>()?.conn.as_ref();
@@ -71,6 +88,42 @@ impl BookClub {
 			.into_iter()
 			.map(BookClubMember::from)
 			.collect())
+	}
+
+	async fn members_count(&self, ctx: &Context<'_>) -> Result<u64> {
+		let AuthContext { user, .. } = ctx.data::<AuthContext>()?;
+		let conn = ctx.data::<CoreContext>()?.conn.as_ref();
+		let count =
+			book_club_member::Entity::find_members_accessible_to_user_for_book_club_id(
+				user,
+				&self.model.id.clone(),
+			)
+			.count(conn)
+			.await?;
+
+		Ok(count)
+	}
+
+	async fn membership(&self, ctx: &Context<'_>) -> Result<Option<BookClubMember>> {
+		let AuthContext { user, .. } = ctx.data::<AuthContext>()?;
+		let conn = ctx.data::<CoreContext>()?.conn.as_ref();
+
+		let membership = book_club_member::Entity::find()
+			.filter(
+				book_club_member::Column::BookClubId
+					.eq(self.model.id.clone())
+					.and(book_club_member::Column::UserId.eq(user.id.clone())),
+			)
+			.into_model::<book_club_member::Model>()
+			.one(conn)
+			.await?;
+
+		Ok(membership.map(BookClubMember::from))
+	}
+
+	async fn role_spec(&self) -> Result<Json<BookClubMemberRoleSpec>> {
+		let spec = self.model.member_role_spec.clone().unwrap_or_default();
+		Ok(Json(spec))
 	}
 
 	async fn schedule(&self, ctx: &Context<'_>) -> Result<Option<BookClubSchedule>> {

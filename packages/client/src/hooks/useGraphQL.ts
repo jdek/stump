@@ -5,7 +5,6 @@ import {
 	InfiniteData,
 	QueryKey,
 	useInfiniteQuery,
-	UseInfiniteQueryOptions,
 	UseInfiniteQueryResult,
 	useMutation,
 	UseMutationOptions,
@@ -315,10 +314,13 @@ export function useInfiniteGraphQL<TResult, TVariables>(
 	document: TypedDocumentString<TResult, TVariables>,
 	queryKey: QueryKey,
 	variables?: TVariables extends Record<string, never> ? never : TVariables,
-	options?: Omit<
-		UseInfiniteQueryOptions<TResult, Error, TResult, TResult, readonly unknown[], Pagination>,
-		'queryKey' | 'queryFn'
-	>,
+	// Omit<
+	// 	UseInfiniteQueryOptions<TResult, Error, TResult, TResult, readonly unknown[], Pagination>,
+	// 	'queryKey' | 'queryFn'
+	// >
+	options?: {
+		enabled?: boolean
+	},
 ): UseInfiniteQueryResult<InfiniteData<TResult>> {
 	const { sdk } = useSDK()
 	const { onUnauthenticatedResponse, onConnectionWithServerChanged } = useClientContext()

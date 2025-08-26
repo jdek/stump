@@ -1,4 +1,4 @@
-import { User } from '@stump/graphql'
+import { BookClubMemberRole, User } from '@stump/graphql'
 
 export type GraphQLError = {
 	message: string
@@ -16,3 +16,5 @@ export type GraphQLResponse<T> = {
 }
 
 export type AuthUser = Omit<User, 'continueReading'>
+
+export type BookClubMemberRoleSpec = Record<BookClubMemberRole, string>

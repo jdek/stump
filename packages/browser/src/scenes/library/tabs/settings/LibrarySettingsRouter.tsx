@@ -9,7 +9,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import { useAppContext } from '@/context'
 
 import { useLibraryContext } from '../../context'
-import { LibraryManagementContext } from './context'
+import { LibraryManagementContext, LibraryPatchParams } from './context'
 import { ScanOptions } from './options/scanner/history/ScanHistoryTable'
 
 const BasicSettingsScene = lazy(() => import('./basics/BasicSettingsScene'))
@@ -82,7 +82,7 @@ export default function LibrarySettingsRouter() {
 
 	const client = useQueryClient()
 
-	const { mutate: editLibrary } = useGraphQLMutation(editMutation, {
+	const { mutate: editLibrary, isPending } = useGraphQLMutation(editMutation, {
 		onSuccess: async () => {
 			client.invalidateQueries({
 				predicate: ({ queryKey }) =>
@@ -115,7 +115,8 @@ export default function LibrarySettingsRouter() {
 	 * with the updates provided.
 	 */
 	const patch = useCallback(
-		(updates: Partial<CreateOrUpdateLibraryInput>) => {
+		(updates: LibraryPatchParams) => {
+			if (isPending) return
 			const configWithoutId = omit(
 				updates.config ? { ...config, ...updates.config } : config,
 				'id',
@@ -129,7 +130,7 @@ export default function LibrarySettingsRouter() {
 			} satisfies CreateOrUpdateLibraryInput
 			editLibrary({ id: library.id, input: payload })
 		},
-		[editLibrary, library, config],
+		[editLibrary, library, config, isPending],
 	)
 
 	return (

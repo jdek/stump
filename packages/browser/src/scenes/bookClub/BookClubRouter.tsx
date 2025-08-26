@@ -1,3 +1,4 @@
+import { UserPermission } from '@stump/graphql'
 import { lazy, useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router'
 
@@ -22,10 +23,10 @@ export default function BookClubRouter() {
 	const { checkPermission } = useAppContext()
 
 	const navigate = useNavigate()
-	const canAccess = checkPermission('bookclub:read')
+	const canAccess = checkPermission(UserPermission.AccessBookClub)
 	useEffect(() => {
 		if (!canAccess) {
-			navigate('..')
+			navigate('..', { replace: true })
 		}
 	}, [canAccess, navigate])
 
@@ -47,7 +48,7 @@ export default function BookClubRouter() {
 			<Route path="explore" element={<BookClubExplorerScene />} />
 			{/* TODO: router guard bookclub:create */}
 			<Route path="create" element={<CreateBookClubScene />} />
-			<Route path=":id/*" element={<BookClubHomeLayout />}>
+			<Route path=":slug/*" element={<BookClubHomeLayout />}>
 				<Route path="" element={<BookClubHomeScene />} />
 				<Route path="home" element={<Navigate to=".." replace />} />
 				<Route path="discussion" element={<BookClubDiscussionScene />} />

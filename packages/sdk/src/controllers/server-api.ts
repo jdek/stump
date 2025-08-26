@@ -1,5 +1,6 @@
 import { APIBase } from '../base'
-import { ClaimResponse, StumpVersion, UpdateCheck } from '../types'
+import { StumpVersion, UpdateCheck } from '../types'
+import { ClaimResponse } from '../types/rest'
 import { APIResult, ClassQueryKeys } from './types'
 import { createRouteURLHandler } from './utils'
 
@@ -44,7 +45,7 @@ export class ServerAPI extends APIBase {
 	 */
 	async claimedStatus(): Promise<APIResult<ClaimResponse>> {
 		const { data, ...response } = await this.axios.get('/claim')
-		if (typeof data !== 'object' && !('is_claimed' in data)) {
+		if (typeof data !== 'object' && !('isClaimed' in data)) {
 			throw new Error('Malformed response received from server')
 		}
 		return { data, ...response }

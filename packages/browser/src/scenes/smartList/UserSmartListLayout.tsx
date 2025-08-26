@@ -12,9 +12,9 @@ import {
 import { useLocaleContext } from '@stump/i18n'
 import { UseMutateFunction, useQueryClient } from '@tanstack/react-query'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
 import { Outlet, useLocation, useParams } from 'react-router'
 import { useMediaMatch } from 'rooks'
+import { toast } from 'sonner'
 
 import { SceneContainer } from '@/components/container'
 import { GenericSettingsHeader } from '@/components/settings'

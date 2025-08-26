@@ -177,6 +177,7 @@ mod tests {
 		book_club::Model {
 			id: "123".to_string(),
 			name: "Test".to_string(),
+			slug: "test".to_string(),
 			description: None,
 			is_private: false,
 			member_role_spec: None,

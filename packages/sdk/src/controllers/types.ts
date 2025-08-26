@@ -3,11 +3,6 @@ import { AnyFunction } from 'ts-essentials'
 import { APIError } from '../types'
 
 export type { JwtTokenPair, LoginResponse, PasswordUserInput } from './auth-api'
-export {
-	type UploaderParams,
-	type UploadLibraryBooks,
-	type UploadLibrarySeries,
-} from './upload-api'
 
 export type APIResult<T> = import('axios').AxiosResponse<T, import('axios').AxiosError<APIError>>
 

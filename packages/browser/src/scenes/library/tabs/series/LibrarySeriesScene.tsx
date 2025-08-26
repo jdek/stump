@@ -110,7 +110,7 @@ export const usePrefetchLibrarySeries = () => {
 								_and: params.filter,
 								_or: searchFilter,
 							},
-							orderBy: params.orderBy || ([] as SeriesOrderBy[]),
+							orderBy: params.orderBy,
 							pagination: {
 								offset: {
 									...pageParams,
@@ -258,17 +258,7 @@ function LibrarySeriesScene() {
 		isLoading,
 	} = useSuspenseGraphQL(
 		query,
-		[
-			getQueryKey(
-				sdk.cacheKeys.librarySeries,
-				id,
-				page,
-				pageSize,
-				search,
-				resolvedFilters,
-				orderBy,
-			),
-		],
+		getQueryKey(sdk.cacheKeys.librarySeries, id, page, pageSize, search, resolvedFilters, orderBy),
 		{
 			filter: {
 				libraryId: { eq: id },

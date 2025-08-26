@@ -1,10 +1,7 @@
 import { CheckBox, Heading, Text } from '@stump/components'
 import { useLocaleContext } from '@stump/i18n'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
-import { useDebouncedValue } from 'rooks'
-
-import { useLibraryManagementSafe } from '@/scenes/library/tabs/settings/context'
 
 import { CreateOrUpdateLibrarySchema } from '../schema'
 
@@ -19,13 +16,11 @@ type Props = {
 
 export default function FileConversionOptions({ onDidChange }: Props) {
 	const form = useFormContext<CreateOrUpdateLibrarySchema>()
-	const ctx = useLibraryManagementSafe()
 
 	const [convertRarToZip, hardDeleteConversions] = form.watch([
 		'convertRarToZip',
 		'hardDeleteConversions',
 	])
-	const [debouncedOptions] = useDebouncedValue({ convertRarToZip, hardDeleteConversions }, 1000)
 
 	const { t } = useLocaleContext()
 
@@ -35,23 +30,25 @@ export default function FileConversionOptions({ onDidChange }: Props) {
 		}
 	}, [convertRarToZip, hardDeleteConversions, form])
 
-	/***
-	 * An effect that triggers the `onDidChange` callback when the form values change.
-	 */
-	useEffect(() => {
-		if (!ctx?.library || !onDidChange) return
-
-		const existingConvertToZip = ctx.library.config.convertRarToZip
-		const existingHardDelete = ctx.library.config.hardDeleteConversions
-		const { convertRarToZip, hardDeleteConversions } = debouncedOptions
-
-		if (convertRarToZip !== existingConvertToZip || hardDeleteConversions !== existingHardDelete) {
+	const handleChangeConversion = useCallback(() => {
+		form.setValue('convertRarToZip', !convertRarToZip)
+		if (onDidChange) {
 			onDidChange({
-				convertRarToZip: convertRarToZip,
-				hardDeleteConversions: hardDeleteConversions,
+				convertRarToZip: !convertRarToZip,
+				hardDeleteConversions,
 			})
 		}
-	}, [ctx?.library, debouncedOptions, onDidChange])
+	}, [form, convertRarToZip, hardDeleteConversions, onDidChange])
+
+	const handleChangeHardDelete = useCallback(() => {
+		form.setValue('hardDeleteConversions', !hardDeleteConversions)
+		if (onDidChange) {
+			onDidChange({
+				convertRarToZip,
+				hardDeleteConversions: !hardDeleteConversions,
+			})
+		}
+	}, [form, convertRarToZip, hardDeleteConversions, onDidChange])
 
 	return (
 		<div className="flex flex-col gap-y-6">
@@ -68,7 +65,7 @@ export default function FileConversionOptions({ onDidChange }: Props) {
 				label={t(getKey('rarToZip.label'))}
 				description={t(getKey('rarToZip.description'))}
 				checked={convertRarToZip}
-				onClick={() => form.setValue('convertRarToZip', !convertRarToZip)}
+				onClick={handleChangeConversion}
 				{...form.register('convertRarToZip')}
 			/>
 
@@ -79,7 +76,7 @@ export default function FileConversionOptions({ onDidChange }: Props) {
 				description={t(getKey('deleteRarAfter.description'))}
 				checked={hardDeleteConversions}
 				disabled={!convertRarToZip}
-				onClick={() => form.setValue('hardDeleteConversions', !hardDeleteConversions)}
+				onClick={handleChangeHardDelete}
 				{...form.register('hardDeleteConversions')}
 			/>
 		</div>

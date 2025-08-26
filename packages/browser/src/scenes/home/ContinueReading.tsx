@@ -33,7 +33,7 @@ export const usePrefetchContinueReading = () => {
 	const client = useQueryClient()
 	return useCallback(() => {
 		client.prefetchInfiniteQuery({
-			queryKey: ['keepReading'],
+			queryKey: sdk.cacheKey('inProgress'),
 			initialPageParam: {
 				cursor: {
 					limit: 20,

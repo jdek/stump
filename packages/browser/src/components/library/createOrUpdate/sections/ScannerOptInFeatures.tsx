@@ -1,8 +1,7 @@
 import { Alert, CheckBox, Heading, Text } from '@stump/components'
 import { useLocaleContext } from '@stump/i18n'
-import { useEffect } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
-import { useDebouncedValue } from 'rooks'
 
 import { CreateOrUpdateLibrarySchema } from '@/components/library/createOrUpdate'
 import { useLibraryManagementSafe } from '@/scenes/library/tabs/settings/context'
@@ -30,40 +29,58 @@ export default function ScannerOptInFeatures({ onDidChange }: Props) {
 		'generateFileHashes',
 		'generateKoreaderHashes',
 	])
-	const [debouncedOptions] = useDebouncedValue(
-		{ processMetadata, watch, generateFileHashes, koreaderHashes },
-		1000,
+
+	const params = useMemo(
+		() => ({
+			processMetadata,
+			watch,
+			generateFileHashes,
+			generateKoreaderHashes: koreaderHashes,
+		}),
+		[processMetadata, watch, generateFileHashes, koreaderHashes],
 	)
 
-	const { t } = useLocaleContext()
-
-	/***
-	 * An effect that triggers the `onDidChange` callback when the form values change.
-	 */
-	useEffect(() => {
-		if (!ctx?.library || !onDidChange) return
-
-		const existingProcessMetadata = ctx.library.config.processMetadata
-		const existingWatch = ctx.library.config.watch
-		const existingHashFiles = ctx.library.config.generateFileHashes
-		const existingKoreaderHashes = ctx.library.config.generateKoreaderHashes
-		const { processMetadata, watch, generateFileHashes, koreaderHashes } = debouncedOptions
-
-		const didChange =
-			processMetadata !== existingProcessMetadata ||
-			watch !== existingWatch ||
-			generateFileHashes !== existingHashFiles ||
-			koreaderHashes !== existingKoreaderHashes
-
-		if (didChange) {
+	const handleProcessMetadataChange = useCallback(() => {
+		form.setValue('processMetadata', !processMetadata)
+		if (onDidChange) {
 			onDidChange({
-				processMetadata: processMetadata,
-				watch: watch,
-				generateFileHashes: generateFileHashes,
-				generateKoreaderHashes: koreaderHashes,
+				...params,
+				processMetadata: !processMetadata,
 			})
 		}
-	}, [ctx?.library, debouncedOptions, onDidChange])
+	}, [form, processMetadata, params, onDidChange])
+
+	const handleWatchChange = useCallback(() => {
+		form.setValue('watch', !watch)
+		if (onDidChange) {
+			onDidChange({
+				...params,
+				watch: !watch,
+			})
+		}
+	}, [form, watch, params, onDidChange])
+
+	const handleGenerateFileHashesChange = useCallback(() => {
+		form.setValue('generateFileHashes', !generateFileHashes)
+		if (onDidChange) {
+			onDidChange({
+				...params,
+				generateFileHashes: !generateFileHashes,
+			})
+		}
+	}, [form, generateFileHashes, params, onDidChange])
+
+	const handleGenerateKoreaderHashesChange = useCallback(() => {
+		form.setValue('generateKoreaderHashes', !koreaderHashes)
+		if (onDidChange) {
+			onDidChange({
+				...params,
+				generateKoreaderHashes: !koreaderHashes,
+			})
+		}
+	}, [form, koreaderHashes, params, onDidChange])
+
+	const { t } = useLocaleContext()
 
 	return (
 		<div className="flex flex-col gap-y-6">
@@ -86,7 +103,7 @@ export default function ScannerOptInFeatures({ onDidChange }: Props) {
 				label={t(getKey('processMetadata.label'))}
 				description={t(getKey('processMetadata.description'))}
 				checked={processMetadata}
-				onClick={() => form.setValue('processMetadata', !processMetadata)}
+				onClick={handleProcessMetadataChange}
 				{...form.register('processMetadata')}
 			/>
 
@@ -96,7 +113,7 @@ export default function ScannerOptInFeatures({ onDidChange }: Props) {
 				label={t(getKey('watch.label'))}
 				description={t(getKey('watch.description'))}
 				checked={watch}
-				onClick={() => form.setValue('watch', !watch)}
+				onClick={handleWatchChange}
 				{...form.register('watch')}
 			/>
 
@@ -106,7 +123,7 @@ export default function ScannerOptInFeatures({ onDidChange }: Props) {
 				label={t(getKey('generateFileHashes.label'))}
 				description={t(getKey('generateFileHashes.description'))}
 				checked={generateFileHashes}
-				onClick={() => form.setValue('generateFileHashes', !generateFileHashes)}
+				onClick={handleGenerateFileHashesChange}
 				{...form.register('generateFileHashes')}
 			/>
 
@@ -116,7 +133,7 @@ export default function ScannerOptInFeatures({ onDidChange }: Props) {
 				label={t(getKey('koreaderHashes.label'))}
 				description={t(getKey('koreaderHashes.description'))}
 				checked={koreaderHashes}
-				onClick={() => form.setValue('generateKoreaderHashes', !koreaderHashes)}
+				onClick={handleGenerateKoreaderHashesChange}
 				{...form.register('generateKoreaderHashes')}
 			/>
 		</div>

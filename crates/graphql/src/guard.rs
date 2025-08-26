@@ -1,5 +1,8 @@
 use async_graphql::{Context, Guard, Result};
-use models::shared::enums::UserPermission;
+use models::{
+	entity::book_club_member,
+	shared::{book_club::BookClubMemberRole, enums::UserPermission},
+};
 
 use crate::{
 	data::{AuthContext, CoreContext},
@@ -122,6 +125,47 @@ impl Guard for OptionalFeatureGuard {
 			Ok(())
 		} else {
 			Err(error_message::DISABLED_FEATURE.into())
+		}
+	}
+}
+
+pub struct BookClubRoleGuard {
+	club_id: String,
+	role: BookClubMemberRole,
+}
+
+impl BookClubRoleGuard {
+	pub fn new(club_id: &str, role: BookClubMemberRole) -> Self {
+		Self {
+			club_id: club_id.to_string(),
+			role,
+		}
+	}
+}
+
+impl Guard for BookClubRoleGuard {
+	async fn check(&self, ctx: &Context<'_>) -> Result<()> {
+		let AuthContext { user, .. } = ctx.data::<AuthContext>()?;
+		let core = ctx.data::<CoreContext>()?;
+
+		if user.is_server_owner {
+			return Ok(());
+		}
+
+		let Some(membership) =
+			book_club_member::Entity::find_by_club_for_user(user, &self.club_id)
+				.one(core.conn.as_ref())
+				.await?
+		else {
+			return Err(error_message::FORBIDDEN_ACTION.into());
+		};
+
+		let is_permitted = membership.role >= self.role && !user.is_locked;
+
+		if is_permitted {
+			Ok(())
+		} else {
+			Err(error_message::FORBIDDEN_ACTION.into())
 		}
 	}
 }

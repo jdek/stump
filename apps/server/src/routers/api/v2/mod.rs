@@ -31,6 +31,7 @@ pub(crate) fn mount(app_state: AppState) -> Router<AppState> {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClaimResponse {
 	pub is_claimed: bool,
 }

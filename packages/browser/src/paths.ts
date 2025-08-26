@@ -28,25 +28,25 @@ type DocTopic = 'access-control' | 'features/book-clubs'
 type BookClubTab = 'overview' | 'members' | 'discussion' | 'settings'
 
 const pathsInternal = {
-	bookClub: (id: string, tab?: BookClubTab) => `/book-clubs/${id}${tab ? `/${tab}` : ''}`,
-	bookClubCreate: () => '/book-clubs/create',
-	bookClubDiscussion: (id: string, discussionId?: string) => {
-		const url = pathsInternal.bookClub(id, 'discussion')
+	bookClub: (slug: string, tab?: BookClubTab) => `/clubs/${slug}${tab ? `/${tab}` : ''}`,
+	bookClubCreate: () => '/clubs/create',
+	bookClubDiscussion: (slug: string, discussionId?: string) => {
+		const url = pathsInternal.bookClub(slug, 'discussion')
 		if (discussionId?.length) {
-			return `${url}?archived_chat_id=${discussionId}`
+			return `${url}?archivedChat=${discussionId}`
 		}
 		return url
 	},
-	bookClubDiscussionMessage: (id: string, messageId: string, discussionId?: string) => {
-		const url = pathsInternal.bookClubDiscussion(id, discussionId) + '/thread/' + messageId
+	bookClubDiscussionMessage: (slug: string, messageId: string, discussionId?: string) => {
+		const url = pathsInternal.bookClubDiscussion(slug, discussionId) + '/thread/' + messageId
 		if (discussionId?.length) {
-			return `${url}?archived_chat_id=${discussionId}`
+			return `${url}?archivedChat=${discussionId}`
 		}
 		return url
 	},
 	bookClubScheduler: (id: string) => pathsInternal.bookClub(id, 'settings') + '/scheduler',
 	bookClubSettings: (id: string) => pathsInternal.bookClub(id, 'settings'),
-	bookClubs: () => '/book-clubs',
+	bookClubs: () => '/clubs',
 	bookManagement: (id: string) => `/books/${id}/manage`,
 	bookOverview: (id: string) => `/books/${id}`,
 	bookReader: (
