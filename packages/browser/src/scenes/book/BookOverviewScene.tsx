@@ -1,15 +1,15 @@
 import { PREFETCH_STALE_TIME, queryClient, useSDK, useSuspenseGraphQL } from '@stump/client'
 import { ButtonOrLink, Heading, Spacer, Text } from '@stump/components'
 import { graphql, useFragment, UserPermission } from '@stump/graphql'
-import { useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import sortBy from 'lodash/sortBy'
-import { Suspense, useEffect, useMemo } from 'react'
+import { Suspense, useMemo } from 'react'
 import { Helmet } from 'react-helmet'
 import { useParams } from 'react-router'
 import { useMediaMatch } from 'rooks'
 
 import BookCard, { BookCardFragment } from '@/components/book/BookCard'
+import { MediaMetadataEditor } from '@/components/book/metadata'
 import { SceneContainer } from '@/components/container'
 import LinkBadge from '@/components/LinkBadge'
 import ReadMore from '@/components/ReadMore'
@@ -36,6 +36,7 @@ const query = graphql(`
 			metadata {
 				links
 				summary
+				...MediaMetadataEditor
 			}
 			readHistory {
 				completedAt
@@ -84,11 +85,6 @@ export default function BookOverviewScene() {
 		dayjs(completedAt).toDate(),
 	).at(-1)?.completedAt
 	const links = media.metadata?.links.filter((l) => !!l) ?? []
-
-	const client = useQueryClient()
-	useEffect(() => {
-		client.invalidateQueries({ exact: false, queryKey: [sdk.cacheKeys.bookReader] })
-	}, [client, sdk.cacheKeys.bookReader])
 
 	return (
 		<SceneContainer>
@@ -155,7 +151,13 @@ export default function BookOverviewScene() {
 					)}
 
 					{isServerOwner && <BookFileInformation fragment={media} />}
+
 					<BooksAfterCursor cursor={media.id} />
+
+					<div className="flex flex-col gap-y-2">
+						<Heading size="sm">Metadata</Heading>
+						<MediaMetadataEditor mediaId={media.id} data={media.metadata} />
+					</div>
 				</div>
 			</Suspense>
 		</SceneContainer>

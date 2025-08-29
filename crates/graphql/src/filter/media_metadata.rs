@@ -17,7 +17,7 @@ pub struct MediaMetadataFilterInput {
 	#[graphql(default)]
 	pub publisher: Option<StringLikeFilter<String>>,
 	#[graphql(default)]
-	pub genre: Option<StringLikeFilter<String>>,
+	pub genres: Option<StringLikeFilter<String>>,
 	#[graphql(default)]
 	pub characters: Option<StringLikeFilter<String>>,
 	#[graphql(default)]
@@ -92,8 +92,8 @@ impl IntoFilter for MediaMetadataFilterInput {
 					.map(|f| apply_string_filter(media_metadata::Column::Publisher, f)),
 			)
 			.add_option(
-				self.genre
-					.map(|f| apply_string_filter(media_metadata::Column::Genre, f)),
+				self.genres
+					.map(|f| apply_string_filter(media_metadata::Column::Genres, f)),
 			)
 			.add_option(
 				self.characters
@@ -175,7 +175,7 @@ mod tests {
 		let filter = MediaMetadataFilterInput {
 			title: Some(StringLikeFilter::Eq(String::from("Test Title"))),
 			publisher: None,
-			genre: None,
+			genres: None,
 			characters: None,
 			colorists: None,
 			writers: None,

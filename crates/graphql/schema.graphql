@@ -1017,22 +1017,29 @@ input MediaFilterInput {
 type MediaMetadata {
 	id: Int!
 	mediaId: String
-	title: String
-	series: String
-	number: Decimal
-	volume: Int
-	summary: String
-	notes: String
-	genre: String
-	year: Int
-	month: Int
-	day: Int
-	publisher: String
-	pageCount: Int
-	ageRating: Int
 	pageAnalysis: PageAnalysis
-	writers: [String!]!
+	ageRating: Int
+	day: Int
 	genres: [String!]!
+	identifierAmazon: String
+	identifierCalibre: String
+	identifierGoogle: String
+	identifierIsbn: String
+	identifierMobiAsin: String
+	identifierUuid: String
+	language: String
+	month: Int
+	notes: String
+	number: Decimal
+	pageCount: Int
+	publisher: String
+	series: String
+	summary: String
+	title: String
+	titleSort: String
+	volume: Int
+	year: Int
+	writers: [String!]!
 	characters: [String!]!
 	colorists: [String!]!
 	coverArtists: [String!]!
@@ -1047,7 +1054,7 @@ type MediaMetadata {
 input MediaMetadataFilterInput {
 	title: FieldFilterString = null
 	publisher: FieldFilterString = null
-	genre: FieldFilterString = null
+	genres: FieldFilterString = null
 	characters: FieldFilterString = null
 	colorists: FieldFilterString = null
 	writers: FieldFilterString = null
@@ -1069,33 +1076,75 @@ input MediaMetadataFilterInput {
 	_or: [MediaMetadataFilterInput!] = null
 }
 
+input MediaMetadataInput {
+	title: String
+	titleSort: String
+	series: String
+	number: Decimal
+	volume: Int
+	summary: String
+	notes: String
+	genres: [String!]
+	year: Int
+	month: Int
+	day: Int
+	writers: [String!]
+	pencillers: [String!]
+	inkers: [String!]
+	colorists: [String!]
+	letterers: [String!]
+	coverArtists: [String!]
+	editors: [String!]
+	publisher: String
+	links: [String!]
+	characters: [String!]
+	teams: [String!]
+	pageCount: Int
+	ageRating: Int
+	identifierAmazon: String
+	identifierCalibre: String
+	identifierGoogle: String
+	identifierIsbn: String
+	identifierMobiAsin: String
+	identifierUuid: String
+	language: String
+}
+
 enum MediaMetadataModelOrdering {
 	ID
 	MEDIA_ID
-	TITLE
-	SERIES
-	NUMBER
-	VOLUME
-	SUMMARY
-	NOTES
-	GENRE
-	YEAR
-	MONTH
-	DAY
-	WRITERS
-	PENCILLERS
-	INKERS
-	COLORISTS
-	LETTERERS
-	COVER_ARTISTS
-	EDITORS
-	PUBLISHER
-	LINKS
-	CHARACTERS
-	TEAMS
-	PAGE_COUNT
-	AGE_RATING
 	PAGE_ANALYSIS
+	AGE_RATING
+	CHARACTERS
+	COLORISTS
+	COVER_ARTISTS
+	DAY
+	EDITORS
+	GENRES
+	IDENTIFIER_AMAZON
+	IDENTIFIER_CALIBRE
+	IDENTIFIER_GOOGLE
+	IDENTIFIER_ISBN
+	IDENTIFIER_MOBI_ASIN
+	IDENTIFIER_UUID
+	INKERS
+	LANGUAGE
+	LETTERERS
+	LINKS
+	MONTH
+	NOTES
+	NUMBER
+	PAGE_COUNT
+	PENCILLERS
+	PUBLISHER
+	SERIES
+	SUMMARY
+	TEAMS
+	TITLE
+	TITLE_SORT
+	VOLUME
+	WRITERS
+	YEAR
 }
 
 input MediaMetadataOrderByField {
@@ -1192,6 +1241,7 @@ type Mutation {
 	will be generated based on the library's thumbnail configuration.
 	"""
 	updateMediaThumbnail(id: ID!, input: PageBasedThumbnailInput!): Media!
+	updateMediaMetadata(id: ID!, input: MediaMetadataInput!): Media!
 	deleteMediaProgress(id: ID!): Media!
 	updateMediaProgress(id: ID!, input: MediaProgressInput!): ReadingProgressOutput!
 	markMediaAsComplete(id: ID!, isComplete: Boolean!, page: Int): FinishedReadingSessionModel
@@ -1286,6 +1336,7 @@ type Mutation {
 	will be generated based on the library's thumbnail configuration.
 	"""
 	updateSeriesThumbnail(id: ID!, input: UpdateThumbnailInput!): Series!
+	updateSeriesMetadata(id: ID!, input: SeriesMetadataInput!): Series!
 	markSeriesAsComplete(id: ID!): Series!
 	scanSeries(id: ID!): Boolean!
 	"""
@@ -1828,8 +1879,8 @@ input SeriesMetadataFilterInput {
 	_or: [SeriesMetadataFilterInput!] = null
 }
 
-type SeriesMetadataModel {
-	metaType: String!
+input SeriesMetadataInput {
+	metaType: String
 	title: String
 	summary: String
 	publisher: String
@@ -1839,10 +1890,24 @@ type SeriesMetadataModel {
 	booktype: String
 	ageRating: Int
 	status: String
+}
+
+type SeriesMetadataModel {
 	seriesId: String!
+	metaType: String
+	title: String
+	summary: String
+	publisher: String
+	imprint: String
+	comicid: Int
+	volume: Int
+	booktype: String
+	ageRating: Int
+	status: String
 }
 
 enum SeriesMetadataModelOrdering {
+	SERIES_ID
 	META_TYPE
 	TITLE
 	SUMMARY
@@ -1853,7 +1918,6 @@ enum SeriesMetadataModelOrdering {
 	BOOKTYPE
 	AGE_RATING
 	STATUS
-	SERIES_ID
 }
 
 input SeriesMetadataOrderByField {
@@ -2308,6 +2372,17 @@ enum UserPermission {
 	SCAN_LIBRARY
 	"Grant access to manage the library (scan,edit,manage relations)"
 	MANAGE_LIBRARY
+	"""
+	Grants access to edit any existing metadata for media/series. This will only
+	be applied to the database-level metadata.
+	"""
+	EDIT_METADATA
+	"""
+	Grants access to write back the database-level metadata for media/series.
+	This should be treated with caution, as technically it would allow for
+	overwriting existing metadata at the file-level
+	"""
+	WRITE_BACK_METADATA
 	"Grant access to delete the library (manage library)"
 	DELETE_LIBRARY
 	"""
@@ -2319,6 +2394,7 @@ enum UserPermission {
 	READ_USERS
 	"Grant access to manage users (create,edit,delete)"
 	MANAGE_USERS
+	"Grant access to read notifiers"
 	READ_NOTIFIER
 	"Grant access to create a notifier"
 	CREATE_NOTIFIER

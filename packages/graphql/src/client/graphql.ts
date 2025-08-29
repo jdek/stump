@@ -1086,10 +1086,16 @@ export type MediaMetadata = {
   coverArtists: Array<Scalars['String']['output']>;
   day?: Maybe<Scalars['Int']['output']>;
   editors: Array<Scalars['String']['output']>;
-  genre?: Maybe<Scalars['String']['output']>;
   genres: Array<Scalars['String']['output']>;
   id: Scalars['Int']['output'];
+  identifierAmazon?: Maybe<Scalars['String']['output']>;
+  identifierCalibre?: Maybe<Scalars['String']['output']>;
+  identifierGoogle?: Maybe<Scalars['String']['output']>;
+  identifierIsbn?: Maybe<Scalars['String']['output']>;
+  identifierMobiAsin?: Maybe<Scalars['String']['output']>;
+  identifierUuid?: Maybe<Scalars['String']['output']>;
   inkers: Array<Scalars['String']['output']>;
+  language?: Maybe<Scalars['String']['output']>;
   letterers: Array<Scalars['String']['output']>;
   links: Array<Scalars['String']['output']>;
   mediaId?: Maybe<Scalars['String']['output']>;
@@ -1104,6 +1110,7 @@ export type MediaMetadata = {
   summary?: Maybe<Scalars['String']['output']>;
   teams: Array<Scalars['String']['output']>;
   title?: Maybe<Scalars['String']['output']>;
+  titleSort?: Maybe<Scalars['String']['output']>;
   volume?: Maybe<Scalars['Int']['output']>;
   writers: Array<Scalars['String']['output']>;
   year?: Maybe<Scalars['Int']['output']>;
@@ -1119,7 +1126,7 @@ export type MediaMetadataFilterInput = {
   coverArtists?: InputMaybe<FieldFilterString>;
   day?: InputMaybe<NumericFilterI32>;
   editors?: InputMaybe<FieldFilterString>;
-  genre?: InputMaybe<FieldFilterString>;
+  genres?: InputMaybe<FieldFilterString>;
   inkers?: InputMaybe<FieldFilterString>;
   letterers?: InputMaybe<FieldFilterString>;
   links?: InputMaybe<FieldFilterString>;
@@ -1134,6 +1141,40 @@ export type MediaMetadataFilterInput = {
   year?: InputMaybe<NumericFilterI32>;
 };
 
+export type MediaMetadataInput = {
+  ageRating?: InputMaybe<Scalars['Int']['input']>;
+  characters?: InputMaybe<Array<Scalars['String']['input']>>;
+  colorists?: InputMaybe<Array<Scalars['String']['input']>>;
+  coverArtists?: InputMaybe<Array<Scalars['String']['input']>>;
+  day?: InputMaybe<Scalars['Int']['input']>;
+  editors?: InputMaybe<Array<Scalars['String']['input']>>;
+  genres?: InputMaybe<Array<Scalars['String']['input']>>;
+  identifierAmazon?: InputMaybe<Scalars['String']['input']>;
+  identifierCalibre?: InputMaybe<Scalars['String']['input']>;
+  identifierGoogle?: InputMaybe<Scalars['String']['input']>;
+  identifierIsbn?: InputMaybe<Scalars['String']['input']>;
+  identifierMobiAsin?: InputMaybe<Scalars['String']['input']>;
+  identifierUuid?: InputMaybe<Scalars['String']['input']>;
+  inkers?: InputMaybe<Array<Scalars['String']['input']>>;
+  language?: InputMaybe<Scalars['String']['input']>;
+  letterers?: InputMaybe<Array<Scalars['String']['input']>>;
+  links?: InputMaybe<Array<Scalars['String']['input']>>;
+  month?: InputMaybe<Scalars['Int']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  number?: InputMaybe<Scalars['Decimal']['input']>;
+  pageCount?: InputMaybe<Scalars['Int']['input']>;
+  pencillers?: InputMaybe<Array<Scalars['String']['input']>>;
+  publisher?: InputMaybe<Scalars['String']['input']>;
+  series?: InputMaybe<Scalars['String']['input']>;
+  summary?: InputMaybe<Scalars['String']['input']>;
+  teams?: InputMaybe<Array<Scalars['String']['input']>>;
+  title?: InputMaybe<Scalars['String']['input']>;
+  titleSort?: InputMaybe<Scalars['String']['input']>;
+  volume?: InputMaybe<Scalars['Int']['input']>;
+  writers?: InputMaybe<Array<Scalars['String']['input']>>;
+  year?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export enum MediaMetadataModelOrdering {
   AgeRating = 'AGE_RATING',
   Characters = 'CHARACTERS',
@@ -1141,9 +1182,16 @@ export enum MediaMetadataModelOrdering {
   CoverArtists = 'COVER_ARTISTS',
   Day = 'DAY',
   Editors = 'EDITORS',
-  Genre = 'GENRE',
+  Genres = 'GENRES',
   Id = 'ID',
+  IdentifierAmazon = 'IDENTIFIER_AMAZON',
+  IdentifierCalibre = 'IDENTIFIER_CALIBRE',
+  IdentifierGoogle = 'IDENTIFIER_GOOGLE',
+  IdentifierIsbn = 'IDENTIFIER_ISBN',
+  IdentifierMobiAsin = 'IDENTIFIER_MOBI_ASIN',
+  IdentifierUuid = 'IDENTIFIER_UUID',
   Inkers = 'INKERS',
+  Language = 'LANGUAGE',
   Letterers = 'LETTERERS',
   Links = 'LINKS',
   MediaId = 'MEDIA_ID',
@@ -1158,6 +1206,7 @@ export enum MediaMetadataModelOrdering {
   Summary = 'SUMMARY',
   Teams = 'TEAMS',
   Title = 'TITLE',
+  TitleSort = 'TITLE_SORT',
   Volume = 'VOLUME',
   Writers = 'WRITERS',
   Year = 'YEAR'
@@ -1355,6 +1404,7 @@ export type Mutation = {
    * will be generated based on the library's thumbnail configuration.
    */
   updateLibraryThumbnail: Library;
+  updateMediaMetadata: Media;
   updateMediaProgress: ReadingProgressOutput;
   /**
    * Update the thumbnail for a book. This will replace the existing thumbnail with the the one
@@ -1374,6 +1424,7 @@ export type Mutation = {
    */
   updateReadingList: ReadingList;
   updateScheduledJobConfig: ScheduledJobConfig;
+  updateSeriesMetadata: Series;
   /**
    * Update the thumbnail for a series. This will replace the existing thumbnail with the the one
    * associated with the provided input (book). If the book does not have a thumbnail, one
@@ -1743,6 +1794,12 @@ export type MutationUpdateLibraryThumbnailArgs = {
 };
 
 
+export type MutationUpdateMediaMetadataArgs = {
+  id: Scalars['ID']['input'];
+  input: MediaMetadataInput;
+};
+
+
 export type MutationUpdateMediaProgressArgs = {
   id: Scalars['ID']['input'];
   input: MediaProgressInput;
@@ -1779,6 +1836,12 @@ export type MutationUpdateReadingListArgs = {
 export type MutationUpdateScheduledJobConfigArgs = {
   id: Scalars['Int']['input'];
   input: ScheduledJobConfigInput;
+};
+
+
+export type MutationUpdateSeriesMetadataArgs = {
+  id: Scalars['ID']['input'];
+  input: SeriesMetadataInput;
 };
 
 
@@ -2545,13 +2608,26 @@ export type SeriesMetadataFilterInput = {
   volume?: InputMaybe<NumericFilterI32>;
 };
 
+export type SeriesMetadataInput = {
+  ageRating?: InputMaybe<Scalars['Int']['input']>;
+  booktype?: InputMaybe<Scalars['String']['input']>;
+  comicid?: InputMaybe<Scalars['Int']['input']>;
+  imprint?: InputMaybe<Scalars['String']['input']>;
+  metaType?: InputMaybe<Scalars['String']['input']>;
+  publisher?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+  summary?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+  volume?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type SeriesMetadataModel = {
   __typename?: 'SeriesMetadataModel';
   ageRating?: Maybe<Scalars['Int']['output']>;
   booktype?: Maybe<Scalars['String']['output']>;
   comicid?: Maybe<Scalars['Int']['output']>;
   imprint?: Maybe<Scalars['String']['output']>;
-  metaType: Scalars['String']['output'];
+  metaType?: Maybe<Scalars['String']['output']>;
   publisher?: Maybe<Scalars['String']['output']>;
   seriesId: Scalars['String']['output'];
   status?: Maybe<Scalars['String']['output']>;
@@ -3033,6 +3109,11 @@ export enum UserPermission {
   DownloadFile = 'DOWNLOAD_FILE',
   /** Grant access to edit basic details about the library */
   EditLibrary = 'EDIT_LIBRARY',
+  /**
+   * Grants access to edit any existing metadata for media/series. This will only
+   * be applied to the database-level metadata.
+   */
+  EditMetadata = 'EDIT_METADATA',
   /** Grant access to create an emailer */
   EmailerCreate = 'EMAILER_CREATE',
   /** Grant access to manage an emailer */
@@ -3057,6 +3138,7 @@ export enum UserPermission {
   ManageUsers = 'MANAGE_USERS',
   /** Grant access to read jobs */
   ReadJobs = 'READ_JOBS',
+  /** Grant access to read notifiers */
   ReadNotifier = 'READ_NOTIFIER',
   /** Grant access to read application-level logs, e.g. job logs */
   ReadPersistedLogs = 'READ_PERSISTED_LOGS',
@@ -3072,7 +3154,13 @@ export enum UserPermission {
   /** Grant access to scan the library for new files */
   ScanLibrary = 'SCAN_LIBRARY',
   /** Grant access to upload files to a library */
-  UploadFile = 'UPLOAD_FILE'
+  UploadFile = 'UPLOAD_FILE',
+  /**
+   * Grants access to write back the database-level metadata for media/series.
+   * This should be treated with caution, as technically it would allow for
+   * overwriting existing metadata at the file-level
+   */
+  WriteBackMetadata = 'WRITE_BACK_METADATA'
 }
 
 export type UserPermissionStruct = {
@@ -3140,7 +3228,7 @@ export type BookByIdQueryVariables = Exact<{
 }>;
 
 
-export type BookByIdQuery = { __typename?: 'Query', mediaById?: { __typename?: 'Media', id: string, extension: string, isFavorite: boolean, pages: number, resolvedName: string, size: number, metadata?: { __typename?: 'MediaMetadata', writers: Array<string>, genres: Array<string>, links: Array<string>, pageCount?: number | null, characters: Array<string>, coverArtists: Array<string>, publisher?: string | null, inkers: Array<string>, colorists: Array<string>, letterers: Array<string>, series?: string | null, summary?: string | null, number?: any | null, volume?: number | null } | null, readProgress?: { __typename?: 'ActiveReadingSession', page?: number | null, percentageCompleted?: any | null, epubcfi?: string | null, startedAt: any, elapsedSeconds?: number | null } | null, readHistory: Array<{ __typename?: 'FinishedReadingSession', completedAt: any }>, series: { __typename?: 'Series', resolvedName: string }, thumbnail: { __typename?: 'ImageRef', url: string } } | null };
+export type BookByIdQuery = { __typename?: 'Query', mediaById?: { __typename?: 'Media', id: string, extension: string, isFavorite: boolean, pages: number, resolvedName: string, size: number, metadata?: { __typename?: 'MediaMetadata', ageRating?: number | null, characters: Array<string>, colorists: Array<string>, coverArtists: Array<string>, day?: number | null, editors: Array<string>, identifierAmazon?: string | null, identifierCalibre?: string | null, identifierGoogle?: string | null, identifierIsbn?: string | null, identifierMobiAsin?: string | null, identifierUuid?: string | null, genres: Array<string>, inkers: Array<string>, language?: string | null, letterers: Array<string>, links: Array<string>, month?: number | null, notes?: string | null, number?: any | null, pageCount?: number | null, pencillers: Array<string>, publisher?: string | null, series?: string | null, summary?: string | null, teams: Array<string>, title?: string | null, titleSort?: string | null, volume?: number | null, writers: Array<string>, year?: number | null } | null, readProgress?: { __typename?: 'ActiveReadingSession', page?: number | null, percentageCompleted?: any | null, epubcfi?: string | null, startedAt: any, elapsedSeconds?: number | null } | null, readHistory: Array<{ __typename?: 'FinishedReadingSession', completedAt: any }>, series: { __typename?: 'Series', resolvedName: string }, thumbnail: { __typename?: 'ImageRef', url: string } } | null };
 
 export type BookReadScreenQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3242,7 +3330,7 @@ export type ContinueReadingQueryVariables = Exact<{
 export type ContinueReadingQuery = { __typename?: 'Query', keepReading: { __typename?: 'PaginatedMediaResponse', nodes: Array<(
       { __typename?: 'Media', id: string }
       & { ' $fragmentRefs'?: { 'BookListItemFragment': BookListItemFragment;'ReadingNowFragment': ReadingNowFragment } }
-    )>, pageInfo: { __typename: 'CursorPaginationInfo', currentCursor?: string | null, nextCursor?: string | null, limit: number } | { __typename: 'OffsetPaginationInfo' } } };
+    )>, pageInfo: { __typename: 'CursorPaginationInfo' } | { __typename: 'OffsetPaginationInfo', totalPages: number, currentPage: number, pageSize: number, pageOffset: number, zeroBased: boolean } } };
 
 export type ReadingNowFragment = { __typename?: 'Media', id: string, resolvedName: string, metadata?: { __typename?: 'MediaMetadata', summary?: string | null, genres: Array<string>, links: Array<string> } | null, thumbnail: { __typename?: 'ImageRef', url: string } } & { ' $fragmentName'?: 'ReadingNowFragment' };
 
@@ -3315,6 +3403,19 @@ export type BookSearchOverlayQuery = { __typename?: 'Query', media: { __typename
       { __typename?: 'Media', id: string }
       & { ' $fragmentRefs'?: { 'BookCardFragment': BookCardFragment } }
     )>, pageInfo: { __typename: 'CursorPaginationInfo', currentCursor?: string | null, nextCursor?: string | null, limit: number } | { __typename: 'OffsetPaginationInfo' } } };
+
+export type MediaMetadataEditorFragment = { __typename?: 'MediaMetadata', ageRating?: number | null, characters: Array<string>, colorists: Array<string>, coverArtists: Array<string>, day?: number | null, editors: Array<string>, identifierAmazon?: string | null, identifierCalibre?: string | null, identifierGoogle?: string | null, identifierIsbn?: string | null, identifierMobiAsin?: string | null, identifierUuid?: string | null, genres: Array<string>, inkers: Array<string>, language?: string | null, letterers: Array<string>, links: Array<string>, month?: number | null, notes?: string | null, number?: any | null, pageCount?: number | null, pencillers: Array<string>, publisher?: string | null, series?: string | null, summary?: string | null, teams: Array<string>, title?: string | null, titleSort?: string | null, volume?: number | null, writers: Array<string>, year?: number | null } & { ' $fragmentName'?: 'MediaMetadataEditorFragment' };
+
+export type UpdateMediaMetadataMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: MediaMetadataInput;
+}>;
+
+
+export type UpdateMediaMetadataMutation = { __typename?: 'Mutation', updateMediaMetadata: { __typename?: 'Media', metadata?: (
+      { __typename?: 'MediaMetadata' }
+      & { ' $fragmentRefs'?: { 'MediaMetadataEditorFragment': MediaMetadataEditorFragment } }
+    ) | null } };
 
 export type DeleteBookClubConfirmationMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3458,6 +3559,19 @@ export type SeriesBooksAlphabetQueryVariables = Exact<{
 
 export type SeriesBooksAlphabetQuery = { __typename?: 'Query', seriesById?: { __typename?: 'Series', mediaAlphabet: any } | null };
 
+export type SeriesMetadataEditorFragment = { __typename?: 'SeriesMetadataModel', metaType?: string | null, title?: string | null, summary?: string | null, publisher?: string | null, imprint?: string | null, comicid?: number | null, volume?: number | null, booktype?: string | null, ageRating?: number | null, status?: string | null } & { ' $fragmentName'?: 'SeriesMetadataEditorFragment' };
+
+export type UpdateSeriesMetadataMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: SeriesMetadataInput;
+}>;
+
+
+export type UpdateSeriesMetadataMutation = { __typename?: 'Mutation', updateSeriesMetadata: { __typename?: 'Series', metadata?: (
+      { __typename?: 'SeriesMetadataModel' }
+      & { ' $fragmentRefs'?: { 'SeriesMetadataEditorFragment': SeriesMetadataEditorFragment } }
+    ) | null } };
+
 export type UseCoreEventSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3503,7 +3617,10 @@ export type BookOverviewSceneQueryVariables = Exact<{
 
 
 export type BookOverviewSceneQuery = { __typename?: 'Query', mediaById?: (
-    { __typename?: 'Media', id: string, resolvedName: string, extension: string, metadata?: { __typename?: 'MediaMetadata', links: Array<string>, summary?: string | null } | null, readHistory: Array<{ __typename?: 'FinishedReadingSession', completedAt: any }> }
+    { __typename?: 'Media', id: string, resolvedName: string, extension: string, metadata?: (
+      { __typename?: 'MediaMetadata', links: Array<string>, summary?: string | null }
+      & { ' $fragmentRefs'?: { 'MediaMetadataEditorFragment': MediaMetadataEditorFragment } }
+    ) | null, readHistory: Array<{ __typename?: 'FinishedReadingSession', completedAt: any }> }
     & { ' $fragmentRefs'?: { 'BookCardFragment': BookCardFragment;'BookFileInformationFragment': BookFileInformationFragment } }
   ) | null };
 
@@ -3896,7 +4013,10 @@ export type SeriesSettingsSceneQueryVariables = Exact<{
 
 
 export type SeriesSettingsSceneQuery = { __typename?: 'Query', seriesById?: (
-    { __typename?: 'Series' }
+    { __typename?: 'Series', id: string, metadata?: (
+      { __typename?: 'SeriesMetadataModel' }
+      & { ' $fragmentRefs'?: { 'SeriesMetadataEditorFragment': SeriesMetadataEditorFragment } }
+    ) | null }
     & { ' $fragmentRefs'?: { 'SeriesThumbnailSelectorFragment': SeriesThumbnailSelectorFragment } }
   ) | null };
 
@@ -4423,6 +4543,55 @@ export const BookCardFragmentDoc = new TypedDocumentString(`
   }
 }
     `, {"fragmentName":"BookCard"}) as unknown as TypedDocumentString<BookCardFragment, unknown>;
+export const MediaMetadataEditorFragmentDoc = new TypedDocumentString(`
+    fragment MediaMetadataEditor on MediaMetadata {
+  ageRating
+  characters
+  colorists
+  coverArtists
+  day
+  editors
+  identifierAmazon
+  identifierCalibre
+  identifierGoogle
+  identifierIsbn
+  identifierMobiAsin
+  identifierUuid
+  genres
+  inkers
+  language
+  letterers
+  links
+  month
+  notes
+  number
+  pageCount
+  pencillers
+  publisher
+  series
+  summary
+  teams
+  title
+  titleSort
+  volume
+  writers
+  year
+}
+    `, {"fragmentName":"MediaMetadataEditor"}) as unknown as TypedDocumentString<MediaMetadataEditorFragment, unknown>;
+export const SeriesMetadataEditorFragmentDoc = new TypedDocumentString(`
+    fragment SeriesMetadataEditor on SeriesMetadataModel {
+  metaType
+  title
+  summary
+  publisher
+  imprint
+  comicid
+  volume
+  booktype
+  ageRating
+  status
+}
+    `, {"fragmentName":"SeriesMetadataEditor"}) as unknown as TypedDocumentString<SeriesMetadataEditorFragment, unknown>;
 export const BookFileInformationFragmentDoc = new TypedDocumentString(`
     fragment BookFileInformation on Media {
   id
@@ -4632,20 +4801,37 @@ export const BookByIdDocument = new TypedDocumentString(`
     extension
     isFavorite
     metadata {
-      writers
-      genres
-      links
-      pageCount
+      ageRating
       characters
-      coverArtists
-      publisher
-      inkers
       colorists
+      coverArtists
+      day
+      editors
+      identifierAmazon
+      identifierCalibre
+      identifierGoogle
+      identifierIsbn
+      identifierMobiAsin
+      identifierUuid
+      genres
+      inkers
+      language
       letterers
+      links
+      month
+      notes
+      number
+      pageCount
+      pencillers
+      publisher
       series
       summary
-      number
+      teams
+      title
+      titleSort
       volume
+      writers
+      year
     }
     pages
     readProgress {
@@ -4873,10 +5059,12 @@ export const ContinueReadingDocument = new TypedDocumentString(`
     }
     pageInfo {
       __typename
-      ... on CursorPaginationInfo {
-        currentCursor
-        nextCursor
-        limit
+      ... on OffsetPaginationInfo {
+        totalPages
+        currentPage
+        pageSize
+        pageOffset
+        zeroBased
       }
     }
   }
@@ -5024,6 +5212,47 @@ export const BookSearchOverlayDocument = new TypedDocumentString(`
     completedAt
   }
 }`) as unknown as TypedDocumentString<BookSearchOverlayQuery, BookSearchOverlayQueryVariables>;
+export const UpdateMediaMetadataDocument = new TypedDocumentString(`
+    mutation UpdateMediaMetadata($id: ID!, $input: MediaMetadataInput!) {
+  updateMediaMetadata(id: $id, input: $input) {
+    metadata {
+      ...MediaMetadataEditor
+    }
+  }
+}
+    fragment MediaMetadataEditor on MediaMetadata {
+  ageRating
+  characters
+  colorists
+  coverArtists
+  day
+  editors
+  identifierAmazon
+  identifierCalibre
+  identifierGoogle
+  identifierIsbn
+  identifierMobiAsin
+  identifierUuid
+  genres
+  inkers
+  language
+  letterers
+  links
+  month
+  notes
+  number
+  pageCount
+  pencillers
+  publisher
+  series
+  summary
+  teams
+  title
+  titleSort
+  volume
+  writers
+  year
+}`) as unknown as TypedDocumentString<UpdateMediaMetadataMutation, UpdateMediaMetadataMutationVariables>;
 export const DeleteBookClubConfirmationDocument = new TypedDocumentString(`
     mutation DeleteBookClubConfirmation($id: ID!) {
   deleteBookClub(id: $id) {
@@ -5276,6 +5505,26 @@ export const SeriesBooksAlphabetDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<SeriesBooksAlphabetQuery, SeriesBooksAlphabetQueryVariables>;
+export const UpdateSeriesMetadataDocument = new TypedDocumentString(`
+    mutation UpdateSeriesMetadata($id: ID!, $input: SeriesMetadataInput!) {
+  updateSeriesMetadata(id: $id, input: $input) {
+    metadata {
+      ...SeriesMetadataEditor
+    }
+  }
+}
+    fragment SeriesMetadataEditor on SeriesMetadataModel {
+  metaType
+  title
+  summary
+  publisher
+  imprint
+  comicid
+  volume
+  booktype
+  ageRating
+  status
+}`) as unknown as TypedDocumentString<UpdateSeriesMetadataMutation, UpdateSeriesMetadataMutationVariables>;
 export const UseCoreEventDocument = new TypedDocumentString(`
     subscription UseCoreEvent {
   readEvents {
@@ -5368,6 +5617,7 @@ export const BookOverviewSceneDocument = new TypedDocumentString(`
     metadata {
       links
       summary
+      ...MediaMetadataEditor
     }
     readHistory {
       completedAt
@@ -5394,6 +5644,39 @@ export const BookOverviewSceneDocument = new TypedDocumentString(`
     __typename
     completedAt
   }
+}
+fragment MediaMetadataEditor on MediaMetadata {
+  ageRating
+  characters
+  colorists
+  coverArtists
+  day
+  editors
+  identifierAmazon
+  identifierCalibre
+  identifierGoogle
+  identifierIsbn
+  identifierMobiAsin
+  identifierUuid
+  genres
+  inkers
+  language
+  letterers
+  links
+  month
+  notes
+  number
+  pageCount
+  pencillers
+  publisher
+  series
+  summary
+  teams
+  title
+  titleSort
+  volume
+  writers
+  year
 }
 fragment BookFileInformation on Media {
   id
@@ -6267,10 +6550,26 @@ export const SeriesBookGridDocument = new TypedDocumentString(`
 export const SeriesSettingsSceneDocument = new TypedDocumentString(`
     query SeriesSettingsScene($id: ID!) {
   seriesById(id: $id) {
+    id
     ...SeriesThumbnailSelector
+    metadata {
+      ...SeriesMetadataEditor
+    }
   }
 }
-    fragment SeriesThumbnailSelector on Series {
+    fragment SeriesMetadataEditor on SeriesMetadataModel {
+  metaType
+  title
+  summary
+  publisher
+  imprint
+  comicid
+  volume
+  booktype
+  ageRating
+  status
+}
+fragment SeriesThumbnailSelector on Series {
   id
   thumbnail {
     url
