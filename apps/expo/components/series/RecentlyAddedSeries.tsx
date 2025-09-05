@@ -27,15 +27,20 @@ const query = graphql(`
 	}
 `)
 
-export default function RecentlyAddedSeries() {
+type Props = {
+	header: React.ReactElement
+}
+
+export default function RecentlyAddedSeries({ header }: Props) {
 	const {
 		activeServer: { id: serverID },
 	} = useActiveServer()
 
-	const { data, hasNextPage, fetchNextPage } = useInfiniteSuspenseGraphQL(query, [
-		'recentlyAddedSeries',
-		serverID,
-	])
+	const { data, hasNextPage, fetchNextPage } = useInfiniteSuspenseGraphQL(
+		query,
+		['recentlyAddedSeries', serverID],
+		{ pagination: { cursor: { limit: 20 } } },
+	)
 	const { numColumns, sizeEstimate } = useGridItemSize()
 
 	const onEndReached = useCallback(() => {
@@ -58,14 +63,14 @@ export default function RecentlyAddedSeries() {
 			data={data?.pages.flatMap((page) => page.series.nodes) || []}
 			renderItem={renderItem}
 			contentContainerStyle={{
-				paddingTop: 16,
-				paddingBottom: 16,
+				padding: 16,
 			}}
 			estimatedItemSize={sizeEstimate}
 			numColumns={numColumns}
 			onEndReachedThreshold={0.75}
 			onEndReached={onEndReached}
-			contentInsetAdjustmentBehavior="automatic"
+			contentInsetAdjustmentBehavior="always"
+			ListHeaderComponent={header}
 		/>
 	)
 }

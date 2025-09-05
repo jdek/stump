@@ -63,10 +63,6 @@ export default function Screen() {
 		activeServer: { id: serverID },
 	} = useStumpServer()
 
-	useDynamicHeader({
-		title: 'Browse',
-	})
-
 	const router = useRouter()
 	const colors = useColors()
 
@@ -78,31 +74,35 @@ export default function Screen() {
 			className="bg-background"
 			edges={Platform.OS === 'android' ? [] : []}
 		>
-			<ScrollView contentInsetAdjustmentBehavior="automatic">
-				<View className="px-4">
-					{visibleItems.map((item, idx) => (
-						<Fragment key={item.id}>
-							<Pressable
-								// @ts-expect-error: String path
-								onPress={() => router.push({ pathname: item.to, params: { id: serverID } })}
-							>
-								<View className="flex flex-row items-center gap-4 py-4">
-									<item.icon
-										className="h-6 w-6"
-										color={colors.foreground.muted}
-										stroke={colors.foreground.muted}
-									/>
-									<Text>{item.title}</Text>
-								</View>
-							</Pressable>
+			{/* <ScrollView contentInsetAdjustmentBehavior="automatic">
+				
+			</ScrollView> */}
 
-							{idx < visibleItems.length - 1 && <Divider />}
-						</Fragment>
-					))}
+			<RecentlyAddedSeries
+				header={
+					<View className="px-4">
+						{visibleItems.map((item, idx) => (
+							<Fragment key={item.id}>
+								<Pressable
+									// @ts-expect-error: String path
+									onPress={() => router.push({ pathname: item.to, params: { id: serverID } })}
+								>
+									<View className="flex flex-row items-center gap-4 py-4">
+										<item.icon
+											className="h-6 w-6"
+											color={colors.foreground.muted}
+											stroke={colors.foreground.muted}
+										/>
+										<Text>{item.title}</Text>
+									</View>
+								</Pressable>
 
-					<RecentlyAddedSeries />
-				</View>
-			</ScrollView>
+								{idx < visibleItems.length - 1 && <Divider />}
+							</Fragment>
+						))}
+					</View>
+				}
+			/>
 		</SafeAreaView>
 	)
 }
