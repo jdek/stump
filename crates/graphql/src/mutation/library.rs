@@ -15,6 +15,7 @@ use sea_orm::{
 	sea_query::{OnConflict, Query},
 	Condition, IntoActiveModel, QuerySelect, Set, TransactionTrait,
 };
+use std::path::Path;
 use stump_core::filesystem::{
 	image::{
 		generate_book_thumbnail, remove_thumbnails, GenerateThumbnailOptions,
@@ -907,6 +908,27 @@ impl LibraryMutation {
 	}
 }
 
+///  Normalises a path by removing trailing slashes
+fn normalize_path(path: &str) -> &str {
+	let trimmed = path.trim_end_matches(['/', '\\']);
+	if trimmed.is_empty() || path == "/" {
+		"/"
+	} else {
+		trimmed
+	}
+}
+/// Adds a single trailing slash to a path
+fn add_trailing_slash(path: &str) -> String {
+	if path.contains('/') {
+		if path.ends_with('/') {
+			path.to_string()
+		} else {
+			format!("{}/", path)
+		}
+	} else {
+		format!("{}\\", path)
+	}
+}
 /// A helper function to enforce that a library path is valid and does not conflict with
 /// other libraries.
 async fn enforce_valid_library_path(
@@ -932,13 +954,37 @@ async fn enforce_valid_library_path(
 		}
 	}
 
-	let child_libraries = library::Entity::find()
-		.filter(library::Column::Path.starts_with(path))
-		.count(conn)
-		.await?;
+	// example: new_path = "/books", existing_library = "/books/fiction"
+	// check if any libraries start with "/books/" (can't use "/books" else it flags e.g. "/books2")
+	let mut child_query = library::Entity::find().filter(
+		library::Column::Path.starts_with(add_trailing_slash(normalize_path(path))),
+	);
 
-	if child_libraries > 0 {
+	if let Some(existing_path) = existing_path {
+		child_query =
+			child_query.filter(library::Column::Path.ne(normalize_path(existing_path)));
+	}
+
+	let child_libraries_count = child_query.count(conn).await?;
+
+	if child_libraries_count > 0 {
 		return Err("Path is a parent of another library on the filesystem".into());
+	}
+
+	// example: new_path = "/data/books/fiction", existing_library = "/data/books"
+	// check if new_path matches the pattern "/data/books/_%".
+	let values: [sea_orm::Value; 1] = [path.into()];
+	let mut parent_query = library::Entity::find()
+		.filter(Expr::cust_with_values("? LIKE path || '/_%'", values));
+
+	if let Some(existing_path) = existing_path {
+		parent_query = parent_query.filter(library::Column::Path.ne(existing_path));
+	}
+
+	let parent_libraries_count = parent_query.count(conn).await?;
+
+	if parent_libraries_count > 0 {
+		return Err("Path is a child of another library on the filesystem".into());
 	}
 
 	Ok(())
