@@ -14,7 +14,7 @@ const alertVariants = cva(
 				success: 'bg-fill-success-secondary text-foreground-subtle border-fill-success/10',
 				warning: 'bg-fill-warning-secondary text-foreground-subtle border-fill-warning/10',
 				destructive:
-					'bg-fill-danger-secondary text-foreground-danger [&>svg]:text-current *:data-[slot=alert-description]:text-destructive/90',
+					'bg-fill-danger-secondary text-foreground-subtle [&>svg]:text-current border-fill-danger/10',
 			},
 		},
 		defaultVariants: {

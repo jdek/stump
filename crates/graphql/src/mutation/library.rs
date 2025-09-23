@@ -191,6 +191,7 @@ impl LibraryMutation {
 
 	/// Create a new library with the provided configuration. If `scan_after_persist` is `true`,
 	/// the library will be scanned immediately after creation.
+	#[tracing::instrument(skip(self, ctx))]
 	#[graphql(guard = "PermissionGuard::one(UserPermission::CreateLibrary)")]
 	async fn create_library(
 		&self,
@@ -235,6 +236,8 @@ impl LibraryMutation {
 				.all(&txn)
 				.await?;
 
+			tracing::trace!(existing_tags = existing_tags.len(), "Found existing tags");
+
 			let tags_to_create = tags
 				.iter()
 				.filter(|tag| !existing_tags.iter().any(|t| t.name == **tag))
@@ -244,9 +247,18 @@ impl LibraryMutation {
 				})
 				.collect::<Vec<_>>();
 
-			let created_tags = tag::Entity::insert_many(tags_to_create)
-				.exec_with_returning_many(&txn)
-				.await?;
+			tracing::trace!(
+				tags_to_create = tags_to_create.len(),
+				"Found tags to create"
+			);
+
+			let created_tags = if !tags_to_create.is_empty() {
+				tag::Entity::insert_many(tags_to_create)
+					.exec_with_returning_many(&txn)
+					.await?
+			} else {
+				vec![]
+			};
 
 			let to_link = existing_tags
 				.iter()
@@ -267,6 +279,8 @@ impl LibraryMutation {
 			.on_conflict_do_nothing()
 			.exec(&txn)
 			.await?;
+		} else {
+			tracing::debug!("No tags provided, skipping tag creation");
 		}
 
 		txn.commit().await?;

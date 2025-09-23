@@ -1,8 +1,9 @@
 import { useGraphQLMutation, useSDK, useSuspenseGraphQL } from '@stump/client'
-import { Alert } from '@stump/components'
+import { Alert, AlertDescription, AlertTitle } from '@stump/components'
 import { CreateOrUpdateLibraryInput, graphql } from '@stump/graphql'
 import { handleApiError } from '@stump/sdk'
 import { useQueryClient } from '@tanstack/react-query'
+import { AlertCircle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 
@@ -91,7 +92,7 @@ export default function CreateLibraryScene() {
 				name,
 				path,
 				scanAfterPersist,
-				tags: tags?.map(({ label }) => label),
+				tags: tags?.map(({ label }) => label).filter(Boolean),
 			}
 
 			createLibrary({ input })
@@ -123,7 +124,13 @@ export default function CreateLibraryScene() {
 
 				<SceneContainer>
 					<div className="flex flex-col gap-12">
-						{createError && <Alert level="error">{createError}</Alert>}
+						{createError && (
+							<Alert variant="destructive">
+								<AlertCircle />
+								<AlertTitle>Failed to create library</AlertTitle>
+								<AlertDescription>{createError}</AlertDescription>
+							</Alert>
+						)}
 
 						{libraries && (
 							<CreateLibraryForm
