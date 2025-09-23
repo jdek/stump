@@ -32,6 +32,8 @@ const buildDefaultWorkingView = (grouping?: SmartListGrouping): WorkingView => {
 	}
 }
 
+// TODO(smart-lists): This context is way too big. Use a store instead
+
 export type ISmartListContext = {
 	list: SmartListParsed
 	meta?: SmartListMeta

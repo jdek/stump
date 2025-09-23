@@ -141,10 +141,22 @@ export default function TableColumnsBottomDrawer() {
 		})
 	}, [selectedBookColumns])
 
+	// FIXME(smart-list): This is really buggy. Move all of these fucking updates out of effects,
+	// such a strong code smell
 	/**
 	 * An effect to update the local group column state whenever the working view changes
 	 */
 	useEffect(() => {
+		if (selectedGroupColumns.length === 0 && Object.keys(groupByEntityColumnState).length === 0) {
+			return
+		}
+		if (
+			selectedGroupColumns.length === Object.keys(groupByEntityColumnState).length &&
+			selectedGroupColumns.every(({ id }) => groupByEntityColumnState[id])
+		) {
+			return
+		}
+
 		setGroupByEntityColumnState(() => {
 			const newState: Record<string, boolean> = {}
 			selectedGroupColumns.forEach(({ id }) => {
@@ -152,7 +164,7 @@ export default function TableColumnsBottomDrawer() {
 			})
 			return newState
 		})
-	}, [selectedGroupColumns])
+	}, [selectedGroupColumns, groupByEntityColumnState])
 
 	/**
 	 * An effect to update the local multi-sort state whenever the working view changes
