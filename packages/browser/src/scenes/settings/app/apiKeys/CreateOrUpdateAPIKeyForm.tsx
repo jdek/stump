@@ -94,66 +94,68 @@ export default function CreateOrUpdateAPIKeyForm({
 	const validPermissions = allPermissions.filter(checkPermission)
 
 	return (
-		<Form
-			form={form}
-			onSubmit={onSubmit}
-			id={CREATE_OR_UPDATE_API_KEY_FORM_ID}
-			onFocus={() => {
-				onFormFocusStateChanged?.(true)
-			}}
-			onBlur={() => {
-				onFormFocusStateChanged?.(false)
-			}}
-		>
-			<Input
-				label="Name"
-				placeholder="Koreader Sync"
-				{...form.register('name')}
-				errorMessage={errors.name?.message}
-				ignoreFill
-			/>
-
-			<RadioGroup
-				value={inherit ? 'inherit' : 'explicit'}
-				onValueChange={(value) => form.setValue('inherit', value === 'inherit')}
+		<>
+			<Form
+				form={form}
+				onSubmit={onSubmit}
+				id={CREATE_OR_UPDATE_API_KEY_FORM_ID}
+				onFocus={() => {
+					onFormFocusStateChanged?.(true)
+				}}
+				onBlur={() => {
+					onFormFocusStateChanged?.(false)
+				}}
 			>
-				<RadioGroup.CardItem
-					value="inherit"
-					label={t(getFieldKey('permissions.inherit.label'))}
-					description={t(getFieldKey('permissions.inherit.description'))}
-					isActive={inherit}
-				>
-					{inherit && (
-						<div className="pl-4">
-							<Alert variant="warning">
-								<AlertDescription>{t(getKey('inheritDisclaimer'))}</AlertDescription>
-							</Alert>
-						</div>
-					)}
-				</RadioGroup.CardItem>
+				<Input
+					label="Name"
+					placeholder="Koreader Sync"
+					{...form.register('name')}
+					errorMessage={errors.name?.message}
+					ignoreFill
+				/>
 
-				<RadioGroup.CardItem
-					value="explicit"
-					label={t(getFieldKey('permissions.explicit.label'))}
-					description={t(getFieldKey('permissions.explicit.description'))}
-					isActive={!inherit}
+				<RadioGroup
+					value={inherit ? 'inherit' : 'explicit'}
+					onValueChange={(value) => form.setValue('inherit', value === 'inherit')}
 				>
-					{!inherit && (
-						<div className="pl-4">
-							<ComboBox
-								options={validPermissions.map((permission) => ({
-									value: permission,
-									label: t(`userPermissions.${permission}.label`),
-								}))}
-								value={permissions}
-								onChange={handlePermissionsChange}
-								isMultiSelect
-								disabled={inherit}
-							/>
-						</div>
-					)}
-				</RadioGroup.CardItem>
-			</RadioGroup>
+					<RadioGroup.CardItem
+						value="inherit"
+						label={t(getFieldKey('permissions.inherit.label'))}
+						description={t(getFieldKey('permissions.inherit.description'))}
+						isActive={inherit}
+					>
+						{inherit && (
+							<div className="pl-4">
+								<Alert variant="warning">
+									<AlertDescription>{t(getKey('inheritDisclaimer'))}</AlertDescription>
+								</Alert>
+							</div>
+						)}
+					</RadioGroup.CardItem>
+
+					<RadioGroup.CardItem
+						value="explicit"
+						label={t(getFieldKey('permissions.explicit.label'))}
+						description={t(getFieldKey('permissions.explicit.description'))}
+						isActive={!inherit}
+					>
+						{!inherit && (
+							<div className="pl-4">
+								<ComboBox
+									options={validPermissions.map((permission) => ({
+										value: permission,
+										label: t(`userPermissions.${permission}.label`),
+									}))}
+									value={permissions}
+									onChange={handlePermissionsChange}
+									isMultiSelect
+									disabled={inherit}
+								/>
+							</div>
+						)}
+					</RadioGroup.CardItem>
+				</RadioGroup>
+			</Form>
 
 			<DatePicker
 				label={t(getFieldKey('expiresAt.label'))}
@@ -162,7 +164,7 @@ export default function CreateOrUpdateAPIKeyForm({
 				onChange={handleDateChange}
 				minDate={dayjs().add(1, 'day').endOf('day').toDate()}
 			/>
-		</Form>
+		</>
 	)
 }
 
