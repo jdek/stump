@@ -10,10 +10,11 @@ import { useDisplay } from '~/lib/hooks'
 import { cn } from '~/lib/utils'
 
 import { useActiveServer } from '../activeServer'
-import { FasterImage } from '../Image'
+import { TurboImage } from '../Image'
 import { Text } from '../ui'
 import EmptyFeed from './EmptyFeed'
 import { FeedComponentOptions } from './types'
+import { BorderAndShadow } from '../BorderAndShadow'
 
 type Props = {
 	group: OPDSFeedGroup
@@ -94,27 +95,27 @@ export default function PublicationGroup({
 							{({ pressed }) => (
 								<View
 									className={cn('flex items-start px-1 tablet:px-2', {
-										'opacity-90': pressed,
+										'opacity-80': pressed,
 									})}
 								>
-									<View style={{ height: isTablet ? 225 : 150, width: itemWidth }}>
-										<FasterImage
-											source={{
-												url: thumbnailURL || '',
-												headers: {
-													Authorization: sdk.authorizationHeader || '',
-													[STUMP_SAVE_BASIC_SESSION_HEADER]: 'false',
-												},
-												resizeMode: 'cover',
-												borderRadius: 8,
-												cachePolicy: 'discWithCacheControl',
-											}}
-											style={{
-												height: '100%',
-												width: '100%',
-											}}
-										/>
-									</View>
+									<BorderAndShadow
+										style={{ borderRadius: 6, borderWidth: 0.3, shadowRadius: 1.41, elevation: 2 }}
+									>
+										<View style={{ height: isTablet ? 225 : 150, width: itemWidth }}>
+											<TurboImage
+												source={{
+													uri: thumbnailURL || '',
+													headers: {
+														Authorization: sdk.authorizationHeader || '',
+														[STUMP_SAVE_BASIC_SESSION_HEADER]: 'false',
+													},
+												}}
+												resizeMode="stretch"
+												resize={itemWidth * 1.5}
+												style={{ height: '100%', width: '100%' }}
+											/>
+										</View>
+									</BorderAndShadow>
 
 									<View>
 										<Text className="mt-2" style={{ maxWidth: itemWidth - 4 }} numberOfLines={2}>

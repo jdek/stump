@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useActiveServer } from '~/components/activeServer'
 import { InfoRow, InfoSection } from '~/components/book/overview'
-import { FasterImage } from '~/components/Image'
+import { TurboImage } from '~/components/Image'
 import {
 	getDateField,
 	getNumberField,
@@ -18,6 +18,7 @@ import { useDynamicHeader } from '~/lib/hooks/useDynamicHeader'
 import { cn } from '~/lib/utils'
 
 import { usePublicationContext } from './context'
+import { BorderAndShadow } from '~/components/BorderAndShadow'
 
 const { Info, Slash, BookCopy, ChevronLeft } = icons
 
@@ -86,20 +87,23 @@ export default function Screen() {
 				className="flex-1 gap-5 bg-background px-4 tablet:px-6"
 				contentInsetAdjustmentBehavior="automatic"
 			>
-				<View className="flex-1 gap-8 pb-3">
-					<View className="mt-6 flex items-center gap-4">
-						<View className="aspect-[2/3] self-center overflow-hidden rounded-lg">
-							<FasterImage
+				<View className="flex-1 gap-8 py-4">
+					<View className="flex items-center gap-4">
+						<BorderAndShadow
+							style={{ borderRadius: 10, borderWidth: 0.4, shadowRadius: 5, elevation: 8 }}
+						>
+							<TurboImage
 								source={{
-									url: thumbnailURL || '',
+									uri: thumbnailURL || '',
 									headers: {
 										Authorization: sdk.authorizationHeader || '',
 									},
-									resizeMode: 'fill',
 								}}
-								style={{ height: 350, width: 'auto' }}
+								resizeMode="stretch"
+								resize={350 * (2 / 3) * 1.5}
+								style={{ height: 350, width: 350 * (2 / 3) }}
 							/>
-						</View>
+						</BorderAndShadow>
 					</View>
 
 					<View className="flex w-full flex-row items-center gap-2 tablet:max-w-sm tablet:self-center">
@@ -121,13 +125,13 @@ export default function Screen() {
 					</View>
 
 					{!canStream && (
-						<View className="rounded-lg bg-fill-info-secondary p-3">
+						<View className="squircle rounded-lg bg-fill-info-secondary p-3">
 							<Text>This publication lacks a defined reading order and cannot be streamed</Text>
 						</View>
 					)}
 
 					{!isSupportedStream && (
-						<View className="rounded-lg bg-fill-info-secondary p-3">
+						<View className="squircle rounded-lg bg-fill-info-secondary p-3">
 							<Text>
 								This publication contains unsupported media types and cannot be streamed yet
 							</Text>
@@ -168,10 +172,10 @@ export default function Screen() {
 								? [
 										<View
 											key="noInformation"
-											className="h-24 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-edge p-3"
+											className="squircle h-24 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-edge p-3"
 										>
 											<View className="relative flex justify-center">
-												<View className="flex items-center justify-center rounded-lg bg-background-surface p-2">
+												<View className="squircle flex items-center justify-center rounded-lg bg-background-surface p-2">
 													<Info className="h-6 w-6 text-foreground-muted" />
 													<Slash className="absolute h-6 w-6 scale-x-[-1] transform text-foreground opacity-80" />
 												</View>
@@ -191,10 +195,10 @@ export default function Screen() {
 								? [
 										<View
 											key="noSeries"
-											className="h-24 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-edge p-3"
+											className="squircle h-24 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-edge p-3"
 										>
 											<View className="relative flex justify-center">
-												<View className="flex items-center justify-center rounded-lg bg-background-surface p-2">
+												<View className="squircle flex items-center justify-center rounded-lg bg-background-surface p-2">
 													<BookCopy className="h-6 w-6 text-foreground-muted" />
 													<Slash className="absolute h-6 w-6 scale-x-[-1] transform text-foreground opacity-80" />
 												</View>
@@ -234,7 +238,7 @@ export default function Screen() {
 												{({ pressed }) => (
 													<View
 														className={cn(
-															'rounded-lg border border-edge bg-background-surface-secondary p-1 text-center',
+															'squircle rounded-lg border border-edge bg-background-surface-secondary p-1 text-center',
 															{
 																'opacity-80': pressed,
 															},

@@ -10,11 +10,12 @@ import { useDisplay } from '~/lib/hooks'
 import { cn } from '~/lib/utils'
 
 import { useActiveServer } from '../activeServer'
-import { Image } from '../Image'
+import { TurboImage } from '../Image'
 import RefreshControl from '../RefreshControl'
 import { Text } from '../ui'
 import FeedTitle from './FeedTitle'
 import { getPublicationThumbnailURL } from './utils'
+import { BorderAndShadow } from '../BorderAndShadow'
 
 type Props = {
 	feed: OPDSFeed
@@ -135,26 +136,26 @@ export default function PublicationFeed({ feed, onRefresh, isRefreshing }: Props
 							{({ pressed }) => (
 								<View
 									className={cn('xs:items-center flex', {
-										'opacity-90': pressed,
+										'opacity-80': pressed,
 										'py-1': isXSmall,
 									})}
 								>
-									<View className="relative aspect-[2/3] overflow-hidden rounded-lg">
-										<Image
+									<BorderAndShadow
+										style={{ borderRadius: 6, borderWidth: 0.3, shadowRadius: 1.41, elevation: 2 }}
+									>
+										<TurboImage
 											className="z-0"
 											source={{
-												uri: thumbnailURL,
+												uri: thumbnailURL || '',
 												headers: {
-													Authorization: sdk.authorizationHeader,
+													Authorization: sdk.authorizationHeader || '',
 												},
 											}}
-											contentFit="scale-down"
-											style={{
-												height: itemHeight,
-												width: itemWidth,
-											}}
+											resizeMode="stretch"
+											resize={itemWidth * 1.5}
+											style={{ height: itemHeight, width: itemWidth }}
 										/>
-									</View>
+									</BorderAndShadow>
 
 									<View
 										style={{

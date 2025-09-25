@@ -7,8 +7,9 @@ import { Pressable } from 'react-native-gesture-handler'
 import { useDisplay } from '~/lib/hooks'
 
 import { useActiveServer } from '../activeServer'
-import { FasterImage } from '../Image'
+import { TurboImage } from '../Image'
 import { Text } from '../ui'
+import { BorderAndShadow } from '../BorderAndShadow'
 
 const fragment = graphql(`
 	fragment LibrarySearchItem on Library {
@@ -50,18 +51,22 @@ export default function LibrarySearchItem({ library }: Props) {
 				width: width * 0.75,
 			}}
 		>
-			<View className="flex-row items-start gap-4 py-4">
-				<FasterImage
-					source={{
-						url: data.thumbnail.url,
-						headers: {
-							Authorization: sdk.authorizationHeader || '',
-						},
-						resizeMode: 'fill',
-						borderRadius: 8,
-					}}
-					style={{ width: 75, height: 75 / (2 / 3) }}
-				/>
+			<View className="flex-row items-start gap-4 p-4">
+				<BorderAndShadow
+					style={{ borderRadius: 4, borderWidth: 0.3, shadowRadius: 1.41, elevation: 2 }}
+				>
+					<TurboImage
+						source={{
+							uri: data.thumbnail.url,
+							headers: {
+								Authorization: sdk.authorizationHeader || '',
+							},
+						}}
+						resizeMode="stretch"
+						resize={75 * 1.5}
+						style={{ width: 75, height: 75 / (2 / 3) }}
+					/>
+				</BorderAndShadow>
 
 				<View className="flex-1">
 					<Text>{data.name}</Text>
