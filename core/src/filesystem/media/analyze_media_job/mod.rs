@@ -1,21 +1,19 @@
 mod task_analyze_dimensions;
 mod task_page_count;
-mod utils;
 
-use serde::{Deserialize, Serialize};
-use specta::Type;
-
-use crate::{
-	job::{
-		error::JobError, JobExt, JobOutputExt, JobTaskOutput, WorkerCtx, WorkingState,
-		WrappedJob,
-	},
-	prisma::{media, series},
+use crate::job::{
+	error::JobError, JobExt, JobOutputExt, JobTaskOutput, WorkerCtx, WorkingState,
+	WrappedJob,
 };
+use models::entity::{media, series};
+use sea_orm::{prelude::*, QuerySelect};
+use serde::{Deserialize, Serialize};
 
 type MediaID = String;
 type SeriesID = String;
 type LibraryID = String;
+
+// FIXME: This operation needs to be re-thought. I've noticed it can be a reallllll hog
 
 #[derive(Clone)]
 pub enum AnalyzeMediaJobVariant {
@@ -40,7 +38,7 @@ pub enum AnalyzeMediaTask {
 	FullAnalysis(MediaID),
 }
 
-#[derive(Clone, Serialize, Deserialize, Default, Debug, Type)]
+#[derive(Clone, Serialize, Deserialize, Default, Debug)]
 pub struct AnalyzeMediaOutput {
 	/// The number of page counts analyzed.
 	page_counts_analyzed: u64,
@@ -135,34 +133,32 @@ impl JobExt for AnalyzeMediaJob {
 			},
 			// For libraries we need a list of ids
 			AnalyzeMediaJobVariant::AnalyzeLibrary(id) => {
-				let library_media = ctx
-					.db
-					.media()
-					.find_many(vec![media::series::is(vec![series::library_id::equals(
-						Some(id.clone()),
-					)])])
-					.select(media::select!({ id }))
-					.exec()
+				let books = media::Entity::find()
+					.select_only()
+					.columns(vec![media::Column::Id, media::Column::Path])
+					.inner_join(series::Entity)
+					.filter(series::Column::LibraryId.eq(id))
+					.into_model::<media::MediaIdentSelect>()
+					.all(ctx.conn.as_ref())
 					.await
 					.map_err(|e| JobError::InitFailed(e.to_string()))?;
 
-				library_media
+				books
 					.into_iter()
 					.map(|media| AnalyzeMediaTask::FullAnalysis(media.id))
 					.collect()
 			},
 			// We also need a list for series
 			AnalyzeMediaJobVariant::AnalyzeSeries(id) => {
-				let series_media = ctx
-					.db
-					.media()
-					.find_many(vec![media::series_id::equals(Some(id.clone()))])
-					.select(media::select!({ id }))
-					.exec()
-					.await
-					.map_err(|e| JobError::InitFailed(e.to_string()))?;
+				let books = media::Entity::find()
+					.select_only()
+					.columns(vec![media::Column::Id, media::Column::Path])
+					.filter(media::Column::SeriesId.eq(id))
+					.into_model::<media::MediaIdentSelect>()
+					.all(ctx.conn.as_ref())
+					.await?;
 
-				series_media
+				books
 					.into_iter()
 					.map(|media| AnalyzeMediaTask::FullAnalysis(media.id))
 					.collect()

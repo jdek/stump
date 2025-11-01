@@ -1,20 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { queryClient, useLoginOrRegister, useSDK } from '@stump/client'
-import { Alert, Button, cx, Form, Heading, Input } from '@stump/components'
+import { Alert, AlertDescription, Button, cx, Form, Heading, Input } from '@stump/components'
 import { useLocaleContext } from '@stump/i18n'
 import { isAxiosError } from '@stump/sdk'
 import { motion, Variants } from 'framer-motion'
-import { ArrowLeft, ArrowRight, ShieldAlert } from 'lucide-react'
+import { ArrowRight, ShieldAlert } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { FieldValues, useForm } from 'react-hook-form'
-import { toast } from 'react-hot-toast'
 import { useNavigate } from 'react-router'
 import { useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
-import { ConfiguredServersList } from '@/components/savedServer'
 import { useAppStore, useUserStore } from '@/stores'
 
+// TODO: redirect away if the user is already logged in
 export default function LoginOrClaimScene() {
 	const navigate = useNavigate()
 
@@ -39,8 +39,11 @@ export default function LoginOrClaimScene() {
 	} = useLoginOrRegister({
 		onSuccess: async (user) => {
 			setUser(user)
-			await queryClient.refetchQueries([sdk.auth.keys.me], { exact: false })
-			if (redirect.includes('/swagger')) {
+			await queryClient.refetchQueries({
+				queryKey: [sdk.auth.keys.me],
+				exact: false,
+			})
+			if (redirect.includes('/swagger') || redirect.includes('/api')) {
 				window.location.href = redirect
 			} else {
 				navigate(redirect, { replace: true })
@@ -117,8 +120,9 @@ export default function LoginOrClaimScene() {
 		if (isAxiosError(loginError) && loginError.response?.status === 403) {
 			const message = loginError.response?.data as string
 			return (
-				<Alert level="error" icon={ShieldAlert} className="sm:max-w-md md:max-w-lg">
-					<Alert.Content>{message || 'An unknown error occurred'}</Alert.Content>
+				<Alert variant="destructive" className="sm:max-w-md md:max-w-lg">
+					<ShieldAlert />
+					<AlertDescription>{message || 'An unknown error occurred'}</AlertDescription>
 				</Alert>
 			)
 		}
@@ -133,6 +137,7 @@ export default function LoginOrClaimScene() {
 	return (
 		<div data-tauri-drag-region className="flex h-screen w-screen items-center bg-background">
 			<motion.div
+				// @ts-expect-error: It's fine
 				className="w-screen shrink-0"
 				animate={showServers ? 'appearOut' : 'appearIn'}
 				variants={variants}
@@ -199,7 +204,7 @@ export default function LoginOrClaimScene() {
 				</div>
 			</motion.div>
 
-			{isDesktop && (
+			{/* {isDesktop && (
 				<motion.div
 					className="w-screen shrink-0"
 					animate={showServers ? 'appearIn' : 'appearOut'}
@@ -220,7 +225,7 @@ export default function LoginOrClaimScene() {
 						</button>
 					</div>
 				</motion.div>
-			)}
+			)} */}
 		</div>
 	)
 }

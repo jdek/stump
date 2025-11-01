@@ -1,11 +1,14 @@
 use crate::{
-	filesystem::{
-		analyze_media_job::{utils::fetch_media_with_metadata, AnalyzeMediaOutput},
-		media::process::get_page_count_async,
+	filesystem::media::{
+		analyze_media_job::AnalyzeMediaOutput, process::get_page_count_async,
 	},
 	job::{error::JobError, WorkerCtx},
-	prisma::{media, media_metadata},
 };
+use models::entity::{
+	media::{self, MediaIdentSelect},
+	media_metadata,
+};
+use sea_orm::{prelude::*, QuerySelect, Set};
 
 /// The logic for [`super::AnalyzeMediaTask::UpdatePageCount`].
 ///
@@ -18,71 +21,65 @@ use crate::{
 /// * `id` - The id for the media item being analyzed
 /// * `ctx` - A reference to the [`WorkerCtx`] for the job
 /// * `output` - A mutable reference to the job output
+#[tracing::instrument(skip(ctx, output), fields(media_id = %id))]
 pub(crate) async fn execute(
 	id: String,
 	ctx: &WorkerCtx,
 	output: &mut AnalyzeMediaOutput,
 ) -> Result<(), JobError> {
-	// Get media by id from the database
-	let media_item = fetch_media_with_metadata(&id, ctx).await?;
+	let (media_ident, metadata) = media::Entity::find()
+		.select_only()
+		.columns(vec![media::Column::Id, media::Column::Path])
+		.left_join(media_metadata::Entity)
+		.select_also(media_metadata::Entity)
+		.filter(media::Column::Id.eq(id.clone()))
+		.into_model::<MediaIdentSelect, media_metadata::Model>()
+		.one(ctx.conn.as_ref())
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "Database error fetching media item");
+			JobError::TaskFailed(e.to_string())
+		})?
+		.ok_or_else(|| {
+			JobError::TaskFailed(format!("Unable to find media item with id: {id}"))
+		})?;
 
-	let path = media_item.path;
+	let path = media_ident.path;
 	let page_count = get_page_count_async(&path, &ctx.config).await?;
 	output.page_counts_analyzed += 1;
 
 	// Check if a metadata update is needed
-	if let Some(metadata) = media_item.metadata {
+	if let Some(metadata) = metadata {
 		// Great, there's already metadata!
-		// Check if the value matches the currently recorded one, update if not.
-		if let Some(meta_page_count) = metadata.page_count {
-			if meta_page_count != page_count {
-				ctx.db
-					.media_metadata()
-					.update(
-						media_metadata::media_id::equals(media_item.id),
-						vec![media_metadata::page_count::set(Some(page_count))],
-					)
-					.exec()
-					.await?;
-				output.media_updated += 1;
-			}
-		} else {
-			// Page count was `None` so we update it.
-			ctx.db
-				.media_metadata()
-				.update(
-					media_metadata::media_id::equals(media_item.id),
-					vec![media_metadata::page_count::set(Some(page_count))],
-				)
-				.exec()
-				.await?;
-			output.media_updated += 1;
+
+		let should_update = match metadata.page_count {
+			Some(meta_page_count) => meta_page_count != page_count,
+			None => true,
+		};
+
+		if should_update {
+			let rows_affected = media_metadata::Entity::update_many()
+				.filter(media_metadata::Column::MediaId.eq(media_ident.id.clone()))
+				.col_expr(media_metadata::Column::PageCount, Expr::value(page_count))
+				.exec(ctx.conn.as_ref())
+				.await?
+				.rows_affected;
+
+			output.media_updated += rows_affected;
 		}
 
 		Ok(())
 	} else {
 		// Metadata doesn't exist, create it
-		let new_metadata = ctx
-			.db
-			.media_metadata()
-			.create(vec![
-				media_metadata::id::set(media_item.id.clone()),
-				media_metadata::page_count::set(Some(page_count)),
-			])
-			.exec()
+		let metadata = media_metadata::ActiveModel {
+			media_id: Set(Some(media_ident.id.clone())),
+			page_count: Set(Some(page_count)),
+			..Default::default()
+		};
+		media_metadata::Entity::insert(metadata)
+			.exec(ctx.conn.as_ref())
 			.await?;
 
-		// And link it to the media item
-		ctx.db
-			.media()
-			.update(
-				media::id::equals(media_item.id),
-				vec![media::metadata::connect(media_metadata::id::equals(
-					new_metadata.id,
-				))],
-			)
-			.exec()
-			.await?;
 		output.media_updated += 1;
 
 		Ok(())

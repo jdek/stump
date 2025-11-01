@@ -1,5 +1,5 @@
 import { Accordion, cn, Text } from '@stump/components'
-import { Library, Series, SmartListItemGroup } from '@stump/sdk'
+import { SmartListGroupedItem, SmartListItemEntity } from '@stump/graphql'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import pluralize from 'pluralize'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -22,11 +22,11 @@ type AccordionState = {
 }
 
 type Props = {
-	items: SmartListItemGroup<Series>[] | SmartListItemGroup<Library>[]
+	items: SmartListGroupedItem[]
 }
 export default function GroupedSmartListItemList({ items }: Props) {
 	const {
-		preferences: { enable_hide_scrollbar },
+		preferences: { enableHideScrollbar },
 	} = usePreferences()
 
 	const [accordionState, setAccordionState] = useState<AccordionState>(() =>
@@ -93,7 +93,7 @@ export default function GroupedSmartListItemList({ items }: Props) {
 		overscan: 5,
 	})
 
-	const groupHeader = (groupedEntity: Series | Library) => groupedEntity.name
+	const groupHeader = (groupedEntity: SmartListItemEntity) => groupedEntity.name
 
 	useEffect(() => groupVirtualizer.measure(), [groupVirtualizer, accordionState])
 
@@ -104,7 +104,7 @@ export default function GroupedSmartListItemList({ items }: Props) {
 					<div
 						ref={scrollRef}
 						className={cn('overflow-y-auto overflow-x-hidden', {
-							'scrollbar-hide': enable_hide_scrollbar,
+							'scrollbar-hide': enableHideScrollbar,
 						})}
 						style={{
 							height,

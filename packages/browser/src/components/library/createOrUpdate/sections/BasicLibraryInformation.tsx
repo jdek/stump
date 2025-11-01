@@ -1,6 +1,7 @@
 import { Button, Input, TextArea } from '@stump/components'
 import { useLocaleContext } from '@stump/i18n'
 import { Folder } from 'lucide-react'
+import { Suspense } from 'react'
 import { useFormContext, useFormState } from 'react-hook-form'
 
 import TagSelect from '@/components/TagSelect'
@@ -29,7 +30,7 @@ export default function BasicLibraryInformation({ onSetShowDirectoryPicker }: Pr
 
 	return (
 		<div className="flex flex-grow flex-col gap-6">
-			<div className="flex flex-col flex-wrap gap-y-6 md:flex-row md:gap-x-6 md:gap-y-0">
+			<div className="flex flex-col flex-wrap gap-y-6 md:flex-row md:gap-x-6 md:gap-y-6">
 				<Input
 					variant="primary"
 					label={t(getKey('name.label'))}
@@ -69,12 +70,14 @@ export default function BasicLibraryInformation({ onSetShowDirectoryPicker }: Pr
 				{...form.register('description')}
 			/>
 
-			<TagSelect
-				label={t(getKey('tags.label'))}
-				description={t(getKey('tags.description'))}
-				selected={tags}
-				onChange={(value) => form.setValue('tags', value)}
-			/>
+			<Suspense fallback={null}>
+				<TagSelect
+					label={t(getKey('tags.label'))}
+					description={t(getKey('tags.description'))}
+					selected={tags}
+					onChange={(value) => form.setValue('tags', value)}
+				/>
+			</Suspense>
 		</div>
 	)
 }

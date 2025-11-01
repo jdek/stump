@@ -9,7 +9,7 @@ import { match } from 'ts-pattern'
 import { useDisplay } from '~/lib/hooks'
 import { cn } from '~/lib/utils'
 
-import { FasterImage } from './Image'
+import { TurboImage } from './Image'
 import { Text } from './ui'
 
 type Props = {
@@ -41,6 +41,7 @@ export default function StackedEffectThumbnail({ label, uri, href }: Props) {
 			cache: true,
 			key: uri,
 			headers: {
+				...sdk.customHeaders,
 				Authorization: sdk.authorizationHeader || '',
 			},
 		})
@@ -56,18 +57,19 @@ export default function StackedEffectThumbnail({ label, uri, href }: Props) {
 				<Pressable style={{ zIndex: 10 }} onPress={() => router.push(href)}>
 					{({ pressed }) => (
 						<View
-							className={cn('aspect-[2/3] overflow-hidden rounded-lg', {
+							className={cn('squircle aspect-[2/3] overflow-hidden rounded-lg', {
 								'opacity-80': pressed,
 							})}
 						>
-							<FasterImage
+							<TurboImage
 								source={{
-									url: uri,
+									uri: uri,
 									headers: {
+										...sdk.customHeaders,
 										Authorization: sdk.authorizationHeader || '',
 									},
-									resizeMode: 'fill',
 								}}
+								resizeMode="stretch"
 								style={{ height: itemDimension * 1.5, width: itemDimension }}
 							/>
 						</View>
@@ -76,7 +78,7 @@ export default function StackedEffectThumbnail({ label, uri, href }: Props) {
 
 				<View
 					className={cn(
-						'absolute -left-1 top-0 aspect-[2/3] rotate-[-5deg] transform overflow-hidden rounded-lg',
+						'squircle absolute -left-1 top-0 aspect-[2/3] rotate-[-5deg] transform overflow-hidden rounded-lg',
 						{
 							'bg-background': !colors,
 						},
@@ -91,7 +93,7 @@ export default function StackedEffectThumbnail({ label, uri, href }: Props) {
 
 				<View
 					className={cn(
-						'absolute left-0 top-1 aspect-[2/3] rotate-[4deg] transform overflow-hidden rounded-lg',
+						'squircle absolute left-0 top-1 aspect-[2/3] rotate-[4deg] transform overflow-hidden rounded-lg',
 						{
 							'bg-background': !colors,
 						},

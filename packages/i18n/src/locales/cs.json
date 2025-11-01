@@ -792,12 +792,12 @@
 									"name": "Název souboru",
 									"size": "Velikost",
 									"extension": "Přípona",
-									"created_at": "Vytvořeno",
-									"updated_at": "Aktualizováno",
 									"status": "Stav",
 									"path": "Umístění",
 									"pages": "Stran",
-									"tags": "Tagy"
+									"tags": "Tagy",
+									"createdAt": "Vytvořeno",
+									"updatedAt": "Aktualizováno"
 								}
 							},
 							"book_meta": {
@@ -806,7 +806,6 @@
 									"title": "Nadpis",
 									"summary": "Shrnutí",
 									"notes": "Poznámky",
-									"genre": "Žánr",
 									"writers": "Autoři",
 									"pencillers": "Ilustrátoři",
 									"inkers": "Inkers",
@@ -814,10 +813,11 @@
 									"editors": "Editoři",
 									"publisher": "Vydavatel",
 									"colorists": "Barvy",
-									"cover_artists": "Design obálky",
 									"links": "Odkazy",
 									"characters": "Znaky",
-									"teams": "Týmy"
+									"teams": "Týmy",
+									"genres": "Žánr",
+									"coverArtists": "Design obálky"
 								}
 							},
 							"series": {
@@ -830,16 +830,16 @@
 							"series_meta": {
 								"label": "Metadata",
 								"attributes": {
-									"age_rating": "Věkové hodnocení",
 									"title": "Nadpis",
 									"summary": "Shrnutí",
-									"meta_type": "Typ",
 									"publisher": "Vydavatel",
 									"imprint": "Tisk",
 									"comicid": "Comic ID",
 									"booktype": "Typ knihy",
 									"status": "Stav",
-									"volume": "Hlasitost"
+									"volume": "Hlasitost",
+									"metaType": "Typ",
+									"ageRating": "Věkové hodnocení"
 								}
 							},
 							"library": {
@@ -1111,7 +1111,7 @@
 				"desktop": "Domovská obrazovka",
 				"label": "Aplikace"
 			},
-			"server": {
+			"management": {
 				"general": "Obecné",
 				"logs": "Logy",
 				"users": "Uživatelé",
@@ -1119,7 +1119,7 @@
 				"access": "Přístup",
 				"email": "E-mail",
 				"notifications": "Notifikace",
-				"label": "Server"
+				"label": "Management"
 			}
 		},
 		"app/account": {
@@ -1173,7 +1173,7 @@
 				}
 			}
 		},
-		"app/appearance": {
+		"app/preferences": {
 			"helmet": "Vzhled",
 			"title": "Vzhled",
 			"description": "Přizpůsobte si vzhled aplikace",

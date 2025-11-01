@@ -3,7 +3,7 @@ import { Button, Dialog, Form, Input } from '@stump/components'
 import { useLocaleContext } from '@stump/i18n'
 import { useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { useSmartListContext } from '../../context'
@@ -19,7 +19,7 @@ type Props = {
 export default function CreateOrUpdateTableView({ isCreating, isOpen, onClose }: Props) {
 	const { t } = useLocaleContext()
 	const {
-		list: { saved_views },
+		list: { views },
 		selectedView,
 		saveWorkingView,
 		saveSelectedStoredView,
@@ -29,9 +29,7 @@ export default function CreateOrUpdateTableView({ isCreating, isOpen, onClose }:
 		defaultValues: {
 			name: isCreating ? '' : selectedView?.name || '',
 		},
-		resolver: zodResolver(
-			buildSchema(saved_views?.map((view) => view.name) || [], selectedView?.name),
-		),
+		resolver: zodResolver(buildSchema(views?.map((view) => view.name) || [], selectedView?.name)),
 	})
 
 	/**

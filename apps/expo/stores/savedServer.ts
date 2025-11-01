@@ -1,3 +1,4 @@
+import { queryClient } from '@stump/client'
 import { uuid } from 'expo-modules-core'
 import * as SecureStore from 'expo-secure-store'
 import { useCallback } from 'react'
@@ -5,6 +6,7 @@ import { z } from 'zod'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
+import { useCacheStore } from './cache'
 import { ZustandMMKVStorage } from './store'
 
 type ServerID = string
@@ -43,15 +45,11 @@ const serverConfig = z.object({
 })
 export type ServerConfig = z.infer<typeof serverConfig>
 
-const managedToken = z
-	.object({
-		token: z.string(),
-		expiresAt: z.string(),
-	})
-	.transform((data) => ({
-		...data,
-		expiresAt: new Date(data.expiresAt),
-	}))
+const managedToken = z.object({
+	accessToken: z.string(),
+	refreshToken: z.string().nullish(),
+	expiresAt: z.string(),
+})
 export type ManagedToken = z.infer<typeof managedToken>
 
 const SAVED_TOKEN_PREFIX = 'stump-mobile-saved-tokens-' as const
@@ -120,6 +118,10 @@ export const useSavedServers = () => {
 		showStumpServers,
 		setShowStumpServers,
 	} = useSavedServerStore((state) => state)
+
+	const cacheStore = useCacheStore((state) => ({
+		removeInstanceFromCache: state.removeSDK,
+	}))
 
 	const getServerConfig = async (id: ServerID) => {
 		const config = await SecureStore.getItemAsync(formatPrefix('config', id))
@@ -195,12 +197,19 @@ export const useSavedServers = () => {
 	const getServerToken = async (id: ServerID) => {
 		const record = await SecureStore.getItemAsync(formatPrefix('token', id))
 
-		const token = record ? managedToken.parse(JSON.parse(record)) : null
+		const token = record ? managedToken.safeParse(JSON.parse(record))?.data : null
+
+		if (record && !token) {
+			console.warn('Malformed token record detected')
+			await deleteServerToken(id)
+		}
+
 		if (!token) return null
 
-		if (token.expiresAt < new Date()) {
+		if (new Date(token.expiresAt) < new Date()) {
 			await deleteServerToken(id)
-			return null
+			// We delete the token in storage but still return it so the caller can
+			// handle the refresh
 		}
 
 		return token
@@ -225,6 +234,8 @@ export const useSavedServers = () => {
 	 */
 	const deleteServerToken = async (id: ServerID) => {
 		await SecureStore.deleteItemAsync(formatPrefix('token', id))
+		cacheStore.removeInstanceFromCache(id)
+		queryClient.removeQueries({ predicate: ({ queryKey }) => queryKey.includes(id) })
 	}
 
 	/**
@@ -243,7 +254,9 @@ export const useSavedServers = () => {
 	)
 
 	return {
-		savedServers: showStumpServers ? servers : servers.filter((server) => server.kind !== 'stump'),
+		savedServers: showStumpServers
+			? servers
+			: servers.filter((server) => server.kind !== 'stump' || server.stumpOPDS),
 		stumpEnabled: showStumpServers,
 		setStumpEnabled,
 		createServer,

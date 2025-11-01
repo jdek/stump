@@ -1,4 +1,4 @@
-import { Api, constants, User } from '@stump/sdk'
+import { Api, AuthUser, constants } from '@stump/sdk'
 import { isAxiosError } from 'axios'
 import { match, P } from 'ts-pattern'
 
@@ -7,7 +7,8 @@ import { ManagedToken, ServerConfig, ServerKind } from '~/stores/savedServer'
 type AuthSDKParams = {
 	config: ServerConfig | null
 	existingToken?: ManagedToken | null
-	saveToken?: (token: ManagedToken, forUser: User) => Promise<void>
+	saveToken?: (token: ManagedToken, forUser: AuthUser) => Promise<void>
+	onAttemptingAutoAuth?: (attempting: boolean) => void
 }
 
 /**
@@ -21,13 +22,15 @@ type AuthSDKParams = {
  */
 export const authSDKInstance = async (
 	instance: Api,
-	{ config, existingToken, saveToken }: AuthSDKParams,
+	{ config, existingToken, saveToken, onAttemptingAutoAuth }: AuthSDKParams,
 ): Promise<Api | null> => {
 	if (existingToken) {
-		instance.token = existingToken.token
+		instance.tokens = existingToken
 	} else {
-		instance.token = await match(config?.auth)
-			.with({ bearer: P.string }, ({ bearer }) => bearer)
+		await match(config?.auth)
+			.with({ bearer: P.string }, ({ bearer }) => {
+				instance.staticToken = bearer
+			})
 			.with(
 				{
 					basic: P.shape({
@@ -35,10 +38,18 @@ export const authSDKInstance = async (
 						password: P.string,
 					}),
 				},
-				async ({ basic: { username, password } }) =>
-					login(instance, { password, saveToken, username }),
+				async ({ basic: { username, password } }) => {
+					onAttemptingAutoAuth?.(true)
+					const tokens = await login(instance, {
+						password,
+						saveToken,
+						username,
+						onAttemptingAutoAuth,
+					})
+					instance.tokens = tokens
+				},
 			)
-			.otherwise(() => undefined)
+			.otherwise(() => {})
 	}
 
 	if (!instance.isAuthed) {
@@ -51,25 +62,18 @@ export const authSDKInstance = async (
 type LoginParams = {
 	username: string
 	password: string
-} & Pick<AuthSDKParams, 'saveToken'>
+} & Pick<AuthSDKParams, 'saveToken' | 'onAttemptingAutoAuth'>
 
-const login = async (instance: Api, { username, password, saveToken }: LoginParams) => {
+const login = async (
+	instance: Api,
+	{ username, password, saveToken, onAttemptingAutoAuth }: LoginParams,
+) => {
 	try {
 		const result = await instance.auth.login({ password, username })
-		if ('for_user' in result) {
-			const {
-				token: { access_token, expires_at },
-				for_user,
-			} = result
-			await saveToken?.(
-				{
-					expiresAt: new Date(expires_at),
-					token: access_token,
-				},
-				for_user,
-			)
-			// return result as Exclude<typeof result, User>
-			return access_token
+		if ('forUser' in result) {
+			const { forUser, ...token } = result
+			await saveToken?.(token, forUser)
+			return token
 		}
 	} catch (error) {
 		const axiosError = isAxiosError(error) ? error : null
@@ -79,6 +83,8 @@ const login = async (instance: Api, { username, password, saveToken }: LoginPara
 		} else {
 			console.warn('Failed to login:', error)
 		}
+	} finally {
+		onAttemptingAutoAuth?.(false)
 	}
 }
 
@@ -101,8 +107,8 @@ export const getOPDSInstance = async ({ config, serverKind, url }: GetOPDSParams
 			},
 		)
 		.with({ bearer: P.string }, ({ bearer: token }) => {
-			const api = new Api({ baseURL: url, authMethod: 'token', shouldFormatURL })
-			api.token = token
+			const api = new Api({ baseURL: url, authMethod: 'api-key', shouldFormatURL })
+			api.staticToken = token
 			return api
 		})
 		.otherwise(() => new Api({ baseURL: url, authMethod: 'basic', shouldFormatURL }))

@@ -1,10 +1,9 @@
 import { useRouter } from 'expo-router'
-import { View } from 'react-native'
-import { Pressable } from 'react-native-gesture-handler'
+import { Pressable, View } from 'react-native'
 import * as ContextMenu from 'zeego/context-menu'
 
 import { usePreferencesStore } from '~/stores'
-import { SavedServer } from '~/stores/savedServer'
+import { SavedServer, useSavedServers } from '~/stores/savedServer'
 
 import { Text } from '../ui'
 
@@ -32,24 +31,28 @@ export default function SavedServerListItem({ server, onEdit, onDelete, forceOPD
 		}
 	}
 
+	const { deleteServerToken } = useSavedServers()
+
 	const router = useRouter()
 
 	return (
-		<View className="w-full rounded-2xl">
+		<View className="w-full">
 			<ContextMenu.Root>
 				<ContextMenu.Trigger className="w-full">
 					<Pressable
 						key={server.id}
 						onPress={() =>
 							router.push({
+								// @ts-expect-error: It's fine
 								pathname: server.kind === 'stump' && !forceOPDS ? '/server/[id]' : '/opds/[id]',
 								params: {
 									id: server.id,
 								},
 							})
 						}
+						onLongPress={() => {}}
 					>
-						<View className="bg-background-muted w-full items-start rounded-2xl border border-edge bg-background-surface p-3">
+						<View className="bg-background-muted squircle w-full items-start rounded-2xl border border-edge bg-background-surface p-3">
 							<View className="flex-1 items-start justify-center gap-1">
 								<Text className="text-lg">{server.name}</Text>
 								<Text className="flex-1 text-foreground-muted">{formatURL(server.url)}</Text>
@@ -68,6 +71,26 @@ export default function SavedServerListItem({ server, onEdit, onDelete, forceOPD
 							}}
 						/>
 					</ContextMenu.Item>
+
+					{server.kind === 'stump' && !forceOPDS && (
+						<ContextMenu.Item
+							key="forget"
+							destructive
+							onSelect={async () => {
+								await deleteServerToken(server.id)
+							}}
+						>
+							<ContextMenu.ItemTitle>Discard Tokens</ContextMenu.ItemTitle>
+							<ContextMenu.ItemSubtitle>Affects login tokens only</ContextMenu.ItemSubtitle>
+
+							<ContextMenu.ItemIcon
+								ios={{
+									name: 'key.fill',
+								}}
+							/>
+						</ContextMenu.Item>
+					)}
+
 					<ContextMenu.Item key="remove" destructive onSelect={onDelete}>
 						<ContextMenu.ItemTitle>Remove</ContextMenu.ItemTitle>
 

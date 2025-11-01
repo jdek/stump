@@ -1,11 +1,17 @@
+import { BookReadScreenQuery } from '@stump/graphql'
 import { createContext, useContext } from 'react'
 import { FlatList } from 'react-native'
 
-export type ImageBasedBookRef = {
-	id: string
-	name: string
-	pages: number
+type QueryData = NonNullable<BookReadScreenQuery['mediaById']>
+export type ImageReaderBookRef = Omit<QueryData, 'extension' | 'libraryConfig'> & {
+	libraryConfig?: QueryData['libraryConfig']
 }
+
+export type EbookReaderBookRef = {
+	id: string
+	extension: string
+	name: string
+} & Pick<QueryData, 'ebook' | 'thumbnail' | 'metadata'>
 
 export type ImageBasedBookPageRef = {
 	height: number
@@ -13,10 +19,15 @@ export type ImageBasedBookPageRef = {
 	ratio: number
 }
 
+export type NextInSeriesBookRef = {
+	id: string
+	name: string
+	thumbnailUrl: string
+}
+
 export type IImageBasedReaderContext = {
-	flatListRef: React.RefObject<FlatList>
-	// flatListRef: React.RefObject<FlashList<number>>
-	book: ImageBasedBookRef
+	flatListRef: React.RefObject<FlatList | null>
+	book: ImageReaderBookRef
 	imageSizes?: Record<number, ImageBasedBookPageRef>
 	setImageSizes: React.Dispatch<React.SetStateAction<Record<number, ImageBasedBookPageRef>>>
 	pageSets: number[][]
@@ -25,6 +36,7 @@ export type IImageBasedReaderContext = {
 	currentPage?: number
 	onPageChanged?: (page: number) => void
 	resetTimer?: () => void
+	isOPDS?: boolean
 }
 
 export const ImageBasedReaderContext = createContext<IImageBasedReaderContext | null>(null)

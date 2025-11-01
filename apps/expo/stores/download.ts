@@ -1,17 +1,26 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useSDK } from '@stump/client'
-import { Library, Media, Series } from '@stump/sdk'
-import * as FileSystem from 'expo-file-system'
-import { useCallback, useEffect } from 'react'
+import { MediaMetadata } from '@stump/graphql'
+import * as FileSystem from 'expo-file-system/legacy'
+import { useCallback, useEffect, useMemo } from 'react'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
+import { useActiveServer } from '~/components/activeServer'
 import { booksDirectory, ensureDirectoryExists } from '~/lib/filesystem'
 
+// TODO(offline-reading): Migrate to SQLite, this won't scale well I think
+
+// Empty object yada yada
+// eslint-disable-next-line
 type UnsyncedReadProgress = {}
 
 type FileStumpRef = {
-	book: Pick<Media, 'id' | 'name' | 'metadata'>
+	book: {
+		id: string
+		name: string
+		metadata?: Partial<MediaMetadata>
+	}
 	seriesID: string
 }
 
@@ -22,12 +31,19 @@ type DownloadedFile = {
 	serverID: string
 	unsyncedProgress?: UnsyncedReadProgress
 	stumpRef?: FileStumpRef
+	size?: number // in bytes
 }
 
-type SeriesRef = Pick<Series, 'id' | 'name' | 'media'>
+type SeriesRef = {
+	id: string
+	name: string
+}
 type StumpSeriesRefMap = Record<string, SeriesRef>
 
-type LibraryRef = Pick<Library, 'id' | 'name'>
+type LibraryRef = {
+	id: string
+	name: string
+}
 type StumpLibraryRefMap = Record<string, LibraryRef>
 
 // A reference to a book that is currently being read. This will be used for widgets
@@ -99,55 +115,99 @@ export const useDownloadStore = create<DownloadStore>()(
 )
 
 type DownloadParams = {
-	url: string
-	expectedMime?: string
-	meta?: AddFileMeta
+	id: string
+	url?: string
+	extension: string
+	name: string
 }
 
 export function useDownload() {
-	const { files, addFile } = useDownloadStore()
+	const {
+		activeServer: { id: serverID },
+	} = useActiveServer()
 	const { sdk } = useSDK()
+	const { files, addFile } = useDownloadStore()
 
 	useEffect(() => {
-		ensureDirectoryExists()
-	}, [])
+		ensureDirectoryExists(booksDirectory(serverID))
+	}, [serverID])
 
 	const downloadBook = useCallback(
-		async (file: Omit<DownloadedFile, 'filename'>, { url, meta, expectedMime }: DownloadParams) => {
-			// TODO: Won't have id for all books
-			if (files.some((f) => f.id === file.id)) {
-				console.log('File already downloaded')
+		async ({ id, url, extension }: DownloadParams) => {
+			await ensureDirectoryExists(booksDirectory(serverID))
+			const existingBook = files.find((f) => f.id === id && f.serverID === serverID)
+			if (existingBook) {
+				return `${booksDirectory(serverID)}/${existingBook.filename}`
+			}
+
+			const downloadUrl = url || sdk.media.downloadURL(id)
+			const filename = `${id}.${extension}`
+			const placementUrl = `${booksDirectory(serverID)}/${filename}`
+
+			// console.log('Downloading book to:', placementUrl)
+
+			try {
+				const result = await FileSystem.downloadAsync(downloadUrl, placementUrl, {
+					headers: sdk.headers,
+				})
+
+				if (result.status !== 200) {
+					console.error('Failed to download file, status code:', result.status)
+					return null
+				}
+
+				const size = Number(result.headers['Content-Length'] ?? 0)
+
+				addFile({
+					id,
+					filename,
+					serverID,
+					size: !isNaN(size) && size > 0 ? size : undefined,
+				})
+
+				return result.uri
+			} catch (e) {
+				console.error('Error downloading book', e)
+				return null
+			}
+		},
+		[addFile, files, sdk, serverID],
+	)
+
+	const deleteBook = useCallback(
+		async (bookID: string) => {
+			const file = files.find((f) => f.id === bookID && f.serverID === serverID)
+			if (!file) {
+				console.warn('File not found in download store')
 				return
 			}
 
-			const filename = `${file.id}${extFromMime(expectedMime || '')}`
-			const fileUri = `${booksDirectory(file.serverID)}/${filename}`
-			console.log('Downloading book', { file, url, fileUri })
+			const fileUri = `${booksDirectory(serverID)}/${file.filename}`
 			try {
-				const result = await FileSystem.downloadAsync(url, fileUri, {
-					headers: sdk.headers,
-				})
-				console.log('Download result', result)
-
-				if (result.status !== 200) {
-					return
+				const info = await FileSystem.getInfoAsync(fileUri)
+				if (info.exists) {
+					await FileSystem.deleteAsync(fileUri)
 				}
-
-				addFile(
-					{
-						...file,
-						filename,
-					},
-					meta,
-				)
 			} catch (e) {
-				console.error('Error downloading book', e)
+				console.error('Error deleting file:', e)
 			}
+
+			// Remove the file from the store
+			useDownloadStore.setState({
+				files: useDownloadStore
+					.getState()
+					.files.filter((f) => !(f.id === bookID && f.serverID === serverID)),
+			})
 		},
-		[addFile, files, sdk],
+		[files, serverID],
 	)
 
-	return { downloadBook }
+	const isBookDownloaded = useCallback(
+		(bookID: string) => files.some((file) => file.id === bookID && file.serverID === serverID),
+		[files, serverID],
+	)
+
+	return { downloadBook, deleteBook, isBookDownloaded }
 }
 
 type UseServerDownloadsParams = {
@@ -158,11 +218,11 @@ export const useServerDownloads = ({ id }: UseServerDownloadsParams) => {
 	return files.filter((file) => file.serverID === id)
 }
 
-const extFromMime = (mime: string) => {
-	switch (mime) {
-		case 'application/epub+zip':
-			return '.epub'
-		default:
-			return ''
-	}
+export const useIsBookDownloaded = (bookID: string) => {
+	const { activeServer } = useActiveServer()
+	const { files } = useDownloadStore((store) => ({ files: store.files }))
+	return useMemo(
+		() => files.some((file) => file.id === bookID && file.serverID === activeServer.id),
+		[files, bookID, activeServer.id],
+	)
 }

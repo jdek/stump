@@ -11,20 +11,20 @@ const bookEntityOption = z.object({
 })
 const externalBookOption = z.object({
 	author: z.string(),
-	image_url: z.string().url().optional(),
+	imageUrl: z.string().url().optional(),
 	title: z.string(),
 	url: z.string().url().optional(),
 })
 const bookSchema = z.object({
 	book: z.union([bookEntityOption, externalBookOption]),
-	discussion_duration_days: z.number().optional(),
-	end_at: z.string().optional(),
-	start_at: z.string().optional(),
+	discussionDurationDays: z.number().optional(),
+	endAt: z.string().optional(),
+	startAt: z.string().optional(),
 })
 type BookSchema = z.infer<typeof bookSchema>
 const schema = z.object({
 	books: z.array(bookSchema).min(1, 'You must define at least one book to schedule'),
-	default_interval_days: z.number().optional(),
+	defaultIntervalDays: z.number().optional(),
 })
 export type Schema = z.infer<typeof schema>
 

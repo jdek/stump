@@ -1,26 +1,98 @@
 import { useSDK } from '@stump/client'
-import { Library } from '@stump/sdk'
+import { FragmentType, graphql, useFragment } from '@stump/graphql'
+import { useRouter } from 'expo-router'
+import { Pressable, View } from 'react-native'
+import LinearGradient from 'react-native-linear-gradient'
+
+import { COLORS } from '~/lib/constants'
+import { cn } from '~/lib/utils'
+import { usePreferencesStore } from '~/stores'
 
 import { useActiveServer } from '../activeServer'
-import GridImageItem from '../grid/GridImageItem'
+import { BorderAndShadow } from '../BorderAndShadow'
+import { useGridItemSize } from '../grid/useGridItemSize'
+import { TurboImage } from '../Image'
+import { Text } from '../ui'
+
+const fragment = graphql(`
+	fragment LibraryGridItem on Library {
+		id
+		name
+		thumbnail {
+			url
+		}
+	}
+`)
+
+export type ILibraryGridItemFragment = FragmentType<typeof fragment>
 
 type Props = {
-	library: Library
-	index: number
+	library: ILibraryGridItemFragment
 }
 
-export default function LibraryGridItem({ library, index }: Props) {
+export default function LibraryGridItem({ library }: Props) {
+	const { sdk } = useSDK()
 	const {
 		activeServer: { id: serverID },
 	} = useActiveServer()
-	const { sdk } = useSDK()
+	const { itemDimension } = useGridItemSize()
+	const router = useRouter()
+	const data = useFragment(fragment, library)
+	const thumbnailRatio = usePreferencesStore((state) => state.thumbnailRatio)
+
+	const uri = data.thumbnail?.url ?? undefined
+	const title = data.name
+	const href = `/server/${serverID}/libraries/${data.id}`
 
 	return (
-		<GridImageItem
-			uri={sdk.library.thumbnailURL(library.id)}
-			title={library.name}
-			href={`/server/${serverID}/libraries/${library.id}`}
-			index={index}
-		/>
+		<View className="w-full items-center">
+			{/* @ts-expect-error: String path */}
+			<Pressable onPress={() => router.navigate(href)}>
+				{({ pressed }) => (
+					<View className={cn('relative', { 'opacity-80': pressed })}>
+						<BorderAndShadow
+							style={{ borderRadius: 8, borderWidth: 0.3, shadowRadius: 1.41, elevation: 2 }}
+						>
+							<LinearGradient
+								colors={['transparent', 'rgba(0, 0, 0, 0.50)', 'rgba(0, 0, 0, 0.85)']}
+								style={{ position: 'absolute', inset: 0, zIndex: 10 }}
+							/>
+
+							<TurboImage
+								source={{
+									uri: uri,
+									headers: {
+										...sdk.customHeaders,
+										Authorization: sdk.authorizationHeader || '',
+									},
+								}}
+								resizeMode="stretch"
+								resize={itemDimension * 1.5}
+								style={{ height: itemDimension / thumbnailRatio, width: itemDimension }}
+							/>
+
+							<View className="absolute inset-0 z-20 w-full items-center justify-center">
+								<Text
+									size="2xl"
+									className="font-bold leading-8 tracking-wide"
+									numberOfLines={2}
+									ellipsizeMode="tail"
+									style={{
+										maxWidth: itemDimension - 4,
+										textShadowOffset: { width: 2, height: 1 },
+										textShadowRadius: 2,
+										textShadowColor: 'rgba(0, 0, 0, 0.5)',
+										zIndex: 20,
+										color: COLORS.dark.foreground.DEFAULT,
+									}}
+								>
+									{title}
+								</Text>
+							</View>
+						</BorderAndShadow>
+					</View>
+				)}
+			</Pressable>
+		</View>
 	)
 }

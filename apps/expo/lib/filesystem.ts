@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import urlJoin from 'url-join'
 
 import { useReaderStore } from '~/stores'
@@ -24,6 +24,8 @@ Filesystem structure:
 				- etc
 */
 
+// FIXME: Need to migrate off of legacy FS methods
+
 export const baseDirectory = `${FileSystem.documentDirectory}`
 
 const serverDirectory = (serverID: string) => urlJoin(baseDirectory, serverID)
@@ -39,7 +41,7 @@ export const activelyReadingDirectory = (serverID: string) =>
 export async function ensureDirectoryExists(path = baseDirectory) {
 	const info = await FileSystem.getInfoAsync(path)
 	if (!info.exists) {
-		await FileSystem.makeDirectoryAsync(path)
+		await FileSystem.makeDirectoryAsync(path, { intermediates: true })
 	}
 }
 

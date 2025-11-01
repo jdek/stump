@@ -16,7 +16,7 @@ import { Check, Edit, Lock, Slash, SquareAsterisk, Trash, Unlock, X } from 'luci
 import { useCallback, useState } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 
-import { useLibraryContextSafe } from '@/scenes/library/context'
+import { useLibraryManagementSafe } from '@/scenes/library/tabs/settings/context'
 
 import { CreateOrUpdateLibrarySchema } from '../schema'
 
@@ -25,12 +25,12 @@ const getKey = (key: string) => `${LOCALE_KEY}.fields.ignoreRules.${key}`
 
 export default function IgnoreRulesConfig() {
 	const form = useFormContext<CreateOrUpdateLibrarySchema>()
-	const ctx = useLibraryContextSafe()
+	const ctx = useLibraryManagementSafe()
 	const {
 		fields: ignoreRules,
 		append,
 		remove,
-	} = useFieldArray({ control: form.control, name: 'ignore_rules' })
+	} = useFieldArray({ control: form.control, name: 'ignoreRules' })
 	const { t } = useLocaleContext()
 
 	const isCreatingLibrary = !ctx?.library
@@ -71,7 +71,7 @@ export default function IgnoreRulesConfig() {
 			ignore_subdirs: newRule.endsWith('/**'),
 		})
 		setNewRule('')
-	}, [newRule, append, t])
+	}, [newRule, append, t, ignoreRules])
 
 	/**
 	 * A function to render the lock/unlock button, which disables/enables editing of ignore rules
@@ -99,8 +99,8 @@ export default function IgnoreRulesConfig() {
 			return null
 		}
 
-		const existingRules = ctx.library.config.ignore_rules
-		const newRules = ignoreRules.map((rule) => rule.glob)
+		const existingRules = ctx.library.config.ignoreRules
+		const formRules = ignoreRules.map((rule) => rule.glob)
 
 		/**
 		 * length increased -> added at least one thing -> has changes,
@@ -108,8 +108,8 @@ export default function IgnoreRulesConfig() {
 		 * same length -> check if something has been removed -> if so: has changes, if not: no changes
 		 */
 		const hasChanges =
-			existingRules?.length !== newRules.length ||
-			!existingRules.every((glob) => newRules.includes(glob))
+			existingRules?.length !== formRules.length ||
+			!existingRules.every((glob) => formRules.includes(glob))
 
 		return (
 			<div>
@@ -176,6 +176,7 @@ export default function IgnoreRulesConfig() {
 			<AnimatePresence>
 				{isEditing && (
 					<motion.div
+						// @ts-expect-error: It does have className actually?
 						className="flex flex-col space-y-4"
 						initial={{ height: 0, opacity: 0 }}
 						animate={{ height: 'auto', opacity: 1 }}
@@ -233,7 +234,7 @@ export default function IgnoreRulesConfig() {
 type ConfiguredIgnoreRuleProps = {
 	index: number
 	id: string
-	ignoreRule: CreateOrUpdateLibrarySchema['ignore_rules'][number]
+	ignoreRule: CreateOrUpdateLibrarySchema['ignoreRules'][number]
 	isReadOnly?: boolean
 	onRemove: () => void
 }
@@ -253,7 +254,7 @@ const ConfiguredIgnoreRule = ({
 	const { t } = useLocaleContext()
 
 	const handleCancelEdit = useCallback(() => {
-		form.setValue(`ignore_rules.${index}`, originalIgnoreRule)
+		form.setValue(`ignoreRules.${index}`, originalIgnoreRule)
 		setIsEditing(false)
 	}, [form, index, originalIgnoreRule])
 
@@ -280,7 +281,7 @@ const ConfiguredIgnoreRule = ({
 					className="font-mono"
 					placeholder="**/ignore-me/**"
 					variant="primary"
-					{...form.register(`ignore_rules.${index}.glob`)}
+					{...form.register(`ignoreRules.${index}.glob`)}
 				/>
 			)
 		else {

@@ -6,7 +6,11 @@ import { Button, Heading, icons, Text } from './ui'
 
 const { WifiOff } = icons
 
-export default function ServerConnectFailed() {
+type Props = {
+	onRetry?: () => void
+}
+
+export default function ServerConnectFailed({ onRetry }: Props) {
 	const router = useRouter()
 
 	return (
@@ -17,7 +21,7 @@ export default function ServerConnectFailed() {
 				</Heading>
 
 				<View className="relative flex flex-row justify-center">
-					<View className="flex items-center justify-center rounded-lg bg-background-surface p-2">
+					<View className="squircle flex items-center justify-center rounded-lg bg-background-surface p-2">
 						<WifiOff className="h-10 w-10 text-foreground-muted" />
 					</View>
 				</View>
@@ -33,6 +37,12 @@ export default function ServerConnectFailed() {
 					<Button variant="brand" onPress={() => router.dismissAll()}>
 						<Text>Return Home</Text>
 					</Button>
+
+					{onRetry && (
+						<Button variant="secondary" className="ml-2" onPress={onRetry}>
+							<Text>Try Again</Text>
+						</Button>
+					)}
 				</View>
 			</View>
 		</SafeAreaView>

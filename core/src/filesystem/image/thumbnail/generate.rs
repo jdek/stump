@@ -1,17 +1,17 @@
 use std::path::PathBuf;
 
+use models::{
+	entity::media,
+	shared::image_processor_options::{ImageProcessorOptions, SupportedImageFormat},
+};
 use tokio::{fs, sync::oneshot, task::spawn_blocking};
 
 use crate::{
 	config::StumpConfig,
 	filesystem::{
-		get_page,
-		image::{
-			GenericImageProcessor, ImageFormat, ImageProcessor, ImageProcessorOptions,
-			ProcessorError, WebpProcessor,
-		},
+		image::{GenericImageProcessor, ImageProcessor, ProcessorError, WebpProcessor},
+		media::get_page,
 	},
-	prisma::media,
 };
 
 /// An error enum for thumbnail generation errors
@@ -56,13 +56,17 @@ fn do_generate_book_thumbnail(
 
 	let thumbnail_path = config
 		.get_thumbnails_dir()
-		.join(format!("{}.{}", &file_name, ext));
+		.join(format!("{}.{ext}", &file_name));
 
-	match options.format {
-		ImageFormat::Webp => WebpProcessor::generate(&page_data, options),
+	let thumbnail_buffer = match options.format {
+		SupportedImageFormat::Webp => WebpProcessor::generate(&page_data, options),
 		_ => GenericImageProcessor::generate(&page_data, options),
-	}
-	.map(|buf| (buf, thumbnail_path, true))
+	}?;
+
+	// Explicitly drop the page data to free memory immediately
+	drop(page_data);
+
+	Ok((thumbnail_buffer, thumbnail_path, true))
 }
 
 /// Generate a thumbnail for a book, returning the thumbnail data, the path to the thumbnail file,
@@ -70,7 +74,7 @@ fn do_generate_book_thumbnail(
 /// exists and `force_regen` is false, the function will return the existing thumbnail data.
 #[tracing::instrument(skip_all)]
 pub async fn generate_book_thumbnail(
-	book: &media::Data,
+	book: &media::MediaIdentSelect,
 	GenerateThumbnailOptions {
 		image_options,
 		core_config,
@@ -114,12 +118,13 @@ pub async fn generate_book_thumbnail(
 		let file_name = file_name.clone();
 
 		move || {
-			let send_result = tx.send(do_generate_book_thumbnail(
+			let result = do_generate_book_thumbnail(
 				&book_path,
 				&file_name,
 				&core_config,
 				image_options,
-			));
+			);
+			let send_result = tx.send(result);
 			tracing::trace!(
 				is_err = send_result.is_err(),
 				"Sending generate result to channel"
@@ -127,16 +132,17 @@ pub async fn generate_book_thumbnail(
 		}
 	});
 
-	let generate_result = if let Ok(recv) = rx.await {
-		recv?
-	} else {
-		// Note: `abort` has no affect on blocking threads which have already been spawned,
-		// so we just have to wait for the thread to finish.
-		// See: https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html
-		handle
-			.await
-			.map_err(|e| ThumbnailGenerateError::Unknown(e.to_string()))?;
-		return Err(ThumbnailGenerateError::ResultNeverReceived);
+	let generate_result = match rx.await {
+		Ok(result) => result?,
+		Err(_) => {
+			// Note: `abort` has no affect on blocking threads which have already been spawned,
+			// so we just have to wait for the thread to finish.
+			// See: https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html
+			handle
+				.await
+				.map_err(|e| ThumbnailGenerateError::Unknown(e.to_string()))?;
+			return Err(ThumbnailGenerateError::ResultNeverReceived);
+		},
 	};
 
 	// Write the thumbnail to the filesystem

@@ -1,15 +1,19 @@
-import { useInfiniteQuery, useSDK } from '@stump/client'
+import { useSDK } from '@stump/client'
 import { OPDSFeed } from '@stump/sdk'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { FlatGrid } from 'react-native-super-grid'
 
+import { ON_END_REACHED_THRESHOLD } from '~/lib/constants'
 import { useDisplay } from '~/lib/hooks'
 import { cn } from '~/lib/utils'
+import { usePreferencesStore } from '~/stores'
 
 import { useActiveServer } from '../activeServer'
-import { Image } from '../Image'
+import { BorderAndShadow } from '../BorderAndShadow'
+import { TurboImage } from '../Image'
 import RefreshControl from '../RefreshControl'
 import { Text } from '../ui'
 import FeedTitle from './FeedTitle'
@@ -31,32 +35,32 @@ export default function PublicationFeed({ feed, onRefresh, isRefreshing }: Props
 	const feedURL = feed.links?.find((link) => link.rel === 'self')?.href || ''
 	const [pageSize, setPageSize] = useState(() => Math.max(10, feed.publications.length))
 
-	const { data, hasNextPage, fetchNextPage } = useInfiniteQuery(
-		[sdk.opds.keys.feed, feedURL, 'paged', pageSize],
-		({ pageParam = 1 }) =>
-			sdk.opds.feed(feedURL, {
+	const { data, hasNextPage, fetchNextPage } = useInfiniteQuery({
+		initialPageParam: 1,
+		queryKey: [sdk.opds.keys.feed, feedURL, 'paged', pageSize],
+		queryFn: ({ pageParam = 1 }) => {
+			return sdk.opds.feed(feedURL, {
 				page: pageParam,
 				page_size: pageSize,
-			}),
-		{
-			keepPreviousData: true,
-			getNextPageParam: (lastPage) => {
-				const metadata = lastPage.metadata
-				const numberOfItems = metadata.numberOfItems || feed.metadata.numberOfItems
-				const numberOfPages = metadata.itemsPerPage || feed.metadata.itemsPerPage
-				if (!numberOfPages || !numberOfItems) return undefined
-
-				const currentPage = metadata.currentPage || 1
-
-				const pagesRemaining = Math.ceil(numberOfItems / numberOfPages) - currentPage
-				if (pagesRemaining > 0) {
-					return currentPage + 1
-				}
-				return undefined
-			},
-			enabled: !!feedURL,
+			})
 		},
-	)
+		placeholderData: keepPreviousData,
+		getNextPageParam: (lastPage) => {
+			const metadata = lastPage.metadata
+			const numberOfItems = metadata.numberOfItems || feed.metadata.numberOfItems
+			const numberOfPages = metadata.itemsPerPage || feed.metadata.itemsPerPage
+			if (!numberOfPages || !numberOfItems) return undefined
+
+			const currentPage = metadata.currentPage || 1
+
+			const pagesRemaining = Math.ceil(numberOfItems / numberOfPages) - currentPage
+			if (pagesRemaining > 0) {
+				return currentPage + 1
+			}
+			return undefined
+		},
+		enabled: !!feedURL,
+	})
 
 	const firstPageSize = useMemo(() => data?.pages[0]?.metadata?.itemsPerPage, [data])
 	useEffect(() => {
@@ -72,31 +76,23 @@ export default function PublicationFeed({ feed, onRefresh, isRefreshing }: Props
 	}, [hasNextPage, fetchNextPage])
 
 	const router = useRouter()
+	const thumbnailRatio = usePreferencesStore((state) => state.thumbnailRatio)
 
-	// Each item will be height 150 OR 200 on tablets, plus up to 2 lines of text.
+	// Each item will be width 100 OR 135 on tablets
+	// And we have the height plus up to 2 lines of text.
 	// We want to fill the width of the screen as best as possible. So:
 	const itemWidth = useMemo(() => {
-		// isTablet ? 200 * 0.665 : 150 * 0.665
-		if (isTablet) {
-			return 200 * 0.665
-		} else if (isXSmall) {
-			return width / 2
-		} else {
-			return 150 * 0.665
-		}
+		if (isTablet) return 135
+		else if (isXSmall) return width / 2
+		else return 100
 	}, [isTablet, isXSmall, width])
 	const itemHeight = useMemo(() => {
-		if (isTablet) {
-			return 200
-		} else if (isXSmall) {
-			return (width * 2) / 3 - 1
-		} else {
-			return 150
-		}
+		if (isTablet) return 135 / thumbnailRatio
+		else if (isXSmall) return width / 2 / thumbnailRatio
+		else return 100 / thumbnailRatio
 	}, [isTablet, isXSmall, width])
 
 	const itemsPerRow = Math.floor(width / itemWidth)
-	const availableSpaceX = width - itemsPerRow * itemWidth
 
 	// TODO: fix on xsmall, looks poopy
 
@@ -112,7 +108,7 @@ export default function PublicationFeed({ feed, onRefresh, isRefreshing }: Props
 				itemDimension={itemWidth}
 				data={publications}
 				fixed
-				spacing={availableSpaceX / itemsPerRow}
+				maxItemsPerRow={itemsPerRow}
 				renderItem={({ item: publication }) => {
 					const thumbnailURL = getPublicationThumbnailURL(publication)
 					const selfURL = publication.links?.find((link) => link.rel === 'self')?.href
@@ -134,32 +130,29 @@ export default function PublicationFeed({ feed, onRefresh, isRefreshing }: Props
 							{({ pressed }) => (
 								<View
 									className={cn('xs:items-center flex', {
-										'opacity-90': pressed,
+										'opacity-80': pressed,
 										'py-1': isXSmall,
 									})}
 								>
-									<View className="relative aspect-[2/3] overflow-hidden rounded-lg">
-										<Image
+									<BorderAndShadow
+										style={{ borderRadius: 6, borderWidth: 0.3, shadowRadius: 1.41, elevation: 2 }}
+									>
+										<TurboImage
 											className="z-0"
 											source={{
-												uri: thumbnailURL,
+												uri: thumbnailURL || '',
 												headers: {
-													Authorization: sdk.authorizationHeader,
+													...sdk.customHeaders,
+													Authorization: sdk.authorizationHeader || '',
 												},
 											}}
-											contentFit="scale-down"
-											style={{
-												height: itemHeight,
-												width: itemWidth,
-											}}
+											resizeMode="stretch"
+											resize={itemWidth * 1.5}
+											style={{ height: itemHeight, width: itemWidth }}
 										/>
-									</View>
+									</BorderAndShadow>
 
-									<View
-										style={{
-											maxWidth: isTablet ? 200 * 0.665 : 150 * 0.665,
-										}}
-									>
+									<View style={{ maxWidth: itemWidth }}>
 										<Text className="xs:text-center mt-2 line-clamp-2 text-sm tablet:text-sm">
 											{publication.metadata.title}
 										</Text>
@@ -171,7 +164,7 @@ export default function PublicationFeed({ feed, onRefresh, isRefreshing }: Props
 				}}
 				keyExtractor={(item) => item.metadata.title}
 				onEndReached={onEndReached}
-				onEndReachedThreshold={0.75}
+				onEndReachedThreshold={ON_END_REACHED_THRESHOLD}
 				refreshControl={
 					onRefresh ? (
 						<RefreshControl refreshing={isRefreshing || false} onRefresh={onRefresh} />

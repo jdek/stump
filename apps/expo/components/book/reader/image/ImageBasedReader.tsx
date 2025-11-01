@@ -1,17 +1,24 @@
-import { Zoomable } from '@likashefqet/react-native-image-zoom'
+import { Zoomable, ZoomableRef } from '@likashefqet/react-native-image-zoom'
 import { useSDK } from '@stump/client'
-import { ImageLoadEventData } from 'expo-image'
-import React, { useCallback, useEffect, useMemo } from 'react'
-import { FlatList, useWindowDimensions, View } from 'react-native'
+import { ReadingDirection, ReadingMode } from '@stump/graphql'
+import { STUMP_SAVE_BASIC_SESSION_HEADER } from '@stump/sdk/constants'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+	FlatList,
+	NativeScrollEvent,
+	NativeSyntheticEvent,
+	useWindowDimensions,
+	View,
+} from 'react-native'
 import {
 	GestureStateChangeEvent,
 	State,
 	TapGestureHandlerEventPayload,
 } from 'react-native-gesture-handler'
 import { useSharedValue } from 'react-native-reanimated'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Success } from 'react-native-turbo-image'
 
-import { Image } from '~/components/Image'
+import { TurboImage } from '~/components/Image'
 import { useDisplay, usePrevious } from '~/lib/hooks'
 import { cn } from '~/lib/utils'
 import { useReaderStore } from '~/stores'
@@ -40,12 +47,13 @@ type Props = {
 	 * The initial page to start the reader on
 	 */
 	initialPage: number
+	onPastEndReached?: () => void
 }
 
 /**
  * A reader for books that are image-based, where each page should be displayed as an image
  */
-export default function ImageBasedReader({ initialPage }: Props) {
+export default function ImageBasedReader({ initialPage, onPastEndReached }: Props) {
 	const {
 		book,
 		imageSizes = {},
@@ -55,8 +63,8 @@ export default function ImageBasedReader({ initialPage }: Props) {
 		flatListRef,
 	} = useImageBasedReader()
 	const {
-		preferences: { readingMode, incognito, readingDirection },
-	} = useBookPreferences(book.id)
+		preferences: { readingMode, incognito, readingDirection, doublePageBehavior },
+	} = useBookPreferences({ book })
 	const { height, width } = useWindowDimensions()
 
 	const deviceOrientation = useMemo(
@@ -64,22 +72,19 @@ export default function ImageBasedReader({ initialPage }: Props) {
 		[width, height],
 	)
 
-	const previousOrientation = usePrevious(deviceOrientation)
+	const deviceOrientationChanged = usePrevious(deviceOrientation) !== deviceOrientation
+	const doublePageBehaviorChanged = usePrevious(doublePageBehavior) !== doublePageBehavior
 	useEffect(
 		() => {
 			if (!currentPage) return
-			if (deviceOrientation !== previousOrientation) {
+			if (deviceOrientationChanged || doublePageBehaviorChanged) {
 				const scrollTo = pageSets.findIndex((set) => set.includes(currentPage - 1))
 				if (scrollTo === -1) return
-				const timeout = setTimeout(
-					() => flatListRef?.current?.scrollToIndex({ index: scrollTo, animated: false }),
-					100,
-				)
-				return () => clearTimeout(timeout)
+				flatListRef?.current?.scrollToIndex({ index: scrollTo, animated: false })
 			}
 		},
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[deviceOrientation, previousOrientation],
+		[deviceOrientationChanged, doublePageBehaviorChanged],
 	)
 
 	/**
@@ -97,11 +102,36 @@ export default function ImageBasedReader({ initialPage }: Props) {
 		[onPageChanged, incognito],
 	)
 
+	useEffect(() => {
+		didCallEndReached.current = false
+	}, [currentPage])
+
+	// Note: This does not work for Android so we need an alternative solution
+	const didCallEndReached = useRef(false)
+	const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+		if (didCallEndReached.current) return
+
+		const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent
+
+		const targetContentOffset = event.nativeEvent.targetContentOffset || contentOffset
+
+		// inverted prop on FlatList accounts for RTL already
+		const isPastEnd = contentOffset.x + layoutMeasurement.width > contentSize.width
+		const isTargetPastEnd = targetContentOffset.x + layoutMeasurement.width > contentSize.width
+
+		if (isPastEnd && isTargetPastEnd) {
+			didCallEndReached.current = true
+			onPastEndReached?.()
+		}
+	}, [])
+
 	return (
 		<FlatList
 			ref={flatListRef}
 			data={pageSets}
-			inverted={readingDirection === 'rtl' && readingMode !== 'continuous:vertical'}
+			inverted={
+				readingDirection === ReadingDirection.Rtl && readingMode !== ReadingMode.ContinuousVertical
+			}
 			renderItem={({ item, index }) => (
 				<Page
 					deviceOrientation={deviceOrientation}
@@ -111,11 +141,14 @@ export default function ImageBasedReader({ initialPage }: Props) {
 					maxWidth={width}
 					maxHeight={height}
 					readingDirection="horizontal"
+					onPastEndReached={onPastEndReached}
 				/>
 			)}
 			keyExtractor={(item) => item.toString()}
-			horizontal={readingMode === 'paged' || readingMode === 'continuous:horizontal'}
-			pagingEnabled={readingMode === 'paged'}
+			horizontal={
+				readingMode === ReadingMode.Paged || readingMode === ReadingMode.ContinuousHorizontal
+			}
+			pagingEnabled={readingMode === ReadingMode.Paged}
 			onViewableItemsChanged={({ viewableItems }) => {
 				const firstVisibleItem = viewableItems.filter(({ isViewable }) => isViewable).at(0)
 				if (!firstVisibleItem) return
@@ -151,7 +184,7 @@ export default function ImageBasedReader({ initialPage }: Props) {
 			})}
 			showsVerticalScrollIndicator={false}
 			showsHorizontalScrollIndicator={false}
-			removeClippedSubviews
+			onScroll={handleScroll}
 		/>
 	)
 }
@@ -164,6 +197,7 @@ type PageProps = {
 	maxWidth: number
 	maxHeight: number
 	readingDirection: 'vertical' | 'horizontal'
+	onPastEndReached?: () => void
 }
 
 const Page = React.memo(
@@ -174,21 +208,15 @@ const Page = React.memo(
 		sizes,
 		maxWidth,
 		maxHeight,
+		onPastEndReached,
 		// readingDirection,
 	}: PageProps) => {
+		const { book, pageURL, flatListRef, pageSets, setImageSizes } = useImageBasedReader()
 		const {
-			book: { id },
-			pageURL,
-			flatListRef,
-			setImageSizes,
-		} = useImageBasedReader()
-		const {
-			preferences: { tapSidesToNavigate, readingDirection, cachePolicy },
-		} = useBookPreferences(id)
+			preferences: { tapSidesToNavigate, readingDirection, allowDownscaling },
+		} = useBookPreferences({ book })
 		const { isTablet } = useDisplay()
 		const { sdk } = useSDK()
-
-		const insets = useSafeAreaInsets()
 
 		const scale = useSharedValue(1)
 		const showControls = useReaderStore((state) => state.showControls)
@@ -196,22 +224,27 @@ const Page = React.memo(
 
 		const tapThresholdRatio = isTablet ? 4 : 5
 
+		const zoomableRef = useRef<ZoomableRef>(null)
+
 		const onCheckForNavigationTaps = useCallback(
 			(x: number) => {
 				const isLeft = x < maxWidth / tapThresholdRatio
 				const isRight = x > maxWidth - maxWidth / tapThresholdRatio
 
-				if (isLeft) {
-					const modifier = readingDirection === 'rtl' ? 1 : -1
-					flatListRef.current?.scrollToIndex({ index: index + modifier, animated: true })
-				} else if (isRight) {
-					const modifier = readingDirection === 'rtl' ? -1 : 1
-					flatListRef.current?.scrollToIndex({ index: index + modifier, animated: true })
+				let modifier = 0
+				if (isLeft) modifier = readingDirection === ReadingDirection.Rtl ? 1 : -1
+				if (isRight) modifier = readingDirection === ReadingDirection.Rtl ? -1 : 1
+
+				const nextIndex = index + modifier
+				if (nextIndex >= 0 && nextIndex < pageSets.length) {
+					flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true })
 				}
+
+				if (nextIndex === pageSets.length) onPastEndReached?.()
 
 				return isLeft || isRight
 			},
-			[maxWidth, index, flatListRef, tapThresholdRatio, readingDirection],
+			[maxWidth, index, flatListRef, tapThresholdRatio, readingDirection, pageSets],
 		)
 
 		const onSingleTap = useCallback(
@@ -224,7 +257,9 @@ const Page = React.memo(
 				}
 
 				const didNavigate = onCheckForNavigationTaps(event.x)
-				if (!didNavigate) {
+				if (didNavigate) {
+					zoomableRef.current?.reset()
+				} else {
 					setShowControls(!showControls)
 				}
 			},
@@ -232,10 +267,11 @@ const Page = React.memo(
 		)
 
 		const onImageLoaded = useCallback(
-			(event: ImageLoadEventData, idxIdx: number) => {
-				const { height, width } = event.source
+			(event: NativeSyntheticEvent<Success>, idxIdx: number) => {
+				const { height, width } = event.nativeEvent
 				if (!height || !width) return
 				const ratio = width / height
+				setImageRatio(ratio)
 
 				const pageSize = sizes[idxIdx]
 				const isDifferent = pageSize?.height !== height || pageSize?.width !== width
@@ -250,51 +286,60 @@ const Page = React.memo(
 			[setImageSizes, sizes, indexes],
 		)
 
-		const safeMaxHeight = maxHeight - insets.top - insets.bottom
+		const [imageRatio, setImageRatio] = useState<number | undefined>(undefined)
+		const roughPageRenderWidth = indexes.length > 1 ? maxWidth / 2 : maxWidth
 
-		// TODO: Absolutely don't do this, this is terrible. We need my PRs to be merged upstream:
-		// https://github.com/candlefinance/faster-image/pulls
+		const directionRespectingIndexes =
+			readingDirection === ReadingDirection.Rtl ? [...indexes].reverse() : indexes
 
-		// https://github.com/candlefinance/faster-image/issues/75
 		return (
 			<Zoomable
+				ref={zoomableRef}
 				minScale={1}
 				maxScale={5}
 				scale={scale}
-				doubleTapScale={3}
+				doubleTapScale={2.5}
 				isSingleTapEnabled={true}
 				isDoubleTapEnabled={true}
 				onSingleTap={onSingleTap}
+				onDoubleTap={(zoomType) => {
+					if (zoomType === 'ZOOM_OUT') {
+						setTimeout(() => {
+							zoomableRef.current?.reset()
+						}, 0)
+					}
+				}}
 			>
 				<View
-					className={cn('relative flex justify-center', {
-						'mx-auto flex-row gap-0': indexes.length > 1,
+					className={cn('relative flex-row items-center justify-center', {
+						'mx-auto gap-0': indexes.length > 1,
 					})}
-					style={{
-						height: safeMaxHeight,
-						width: maxWidth,
-					}}
+					style={{ height: maxHeight, width: maxWidth }}
 				>
-					{indexes.map((pageIdx, i) => (
-						<Image
-							key={`${pageIdx}-${i}`}
-							source={{
-								uri: pageURL(pageIdx + 1),
-								headers: {
-									Authorization: sdk.authorizationHeader,
-								},
-								cachePolicy,
-							}}
-							style={{
-								height: '100%',
-								width: indexes.length > 1 ? '50%' : '100%',
-							}}
-							contentFit="contain"
-							contentPosition={indexes.length > 1 ? (i === 0 ? 'right' : 'left') : 'center'}
-							onLoad={(e) => onImageLoaded(e, i)}
-							allowDownscaling={false}
-						/>
-					))}
+					{directionRespectingIndexes.map((pageIdx, i) => {
+						return (
+							<TurboImage
+								key={`${pageIdx}-${i}`}
+								source={{
+									uri: pageURL(pageIdx + 1),
+									headers: {
+										...sdk.customHeaders,
+										Authorization: sdk.authorizationHeader || '',
+										[STUMP_SAVE_BASIC_SESSION_HEADER]: 'false',
+									},
+								}}
+								style={{
+									height: '100%',
+									maxWidth: indexes.length > 1 ? '50%' : '100%',
+									aspectRatio: imageRatio,
+								}}
+								indicator={{ color: 'transparent' }}
+								resizeMode="contain"
+								resize={allowDownscaling ? roughPageRenderWidth * 1.2 : undefined}
+								onSuccess={(event) => onImageLoaded(event, i)}
+							/>
+						)
+					})}
 				</View>
 			</Zoomable>
 		)
