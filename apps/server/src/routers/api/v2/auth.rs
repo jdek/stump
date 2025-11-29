@@ -183,6 +183,7 @@ pub enum LoginResponse {
 	AccessToken(GeneratedToken),
 }
 
+// TODO(oidc): Disable password auth if OIDC config disables it via STUMP_OIDC_DISABLE_LOCAL_AUTH?
 /// Authenticates the user and returns the user object. If the user is already logged in, returns the
 /// user object from the session.
 async fn login(
@@ -228,6 +229,20 @@ async fn login(
 	let today: DateTime<FixedOffset> = Utc::now().into();
 	// TODO: make this configurable via environment variable so knowledgeable attackers can't bypass this
 	let twenty_four_hours_ago = today - Duration::hours(24);
+
+	// Check if this is an OIDC-only user (no password set)
+	if user.hashed_password.is_empty() && user.oidc_issuer_id.is_some() {
+		return Err(APIError::BadRequest(
+			"This account uses OIDC authentication. Please log in with your identity provider."
+				.to_string(),
+		));
+	} else if user.hashed_password.is_empty() {
+		tracing::error!(
+			"Broken account! User {} has no password set and is not an OIDC user",
+			user.username
+		);
+		return Err(APIError::Unauthorized);
+	}
 
 	let provided_valid_credentials = verify_password(&user.hashed_password, &password)?;
 
