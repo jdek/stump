@@ -5,6 +5,7 @@ import omit from 'lodash/omit'
 import pick from 'lodash/pick'
 import { lazy, Suspense, useCallback } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
+import { toast } from 'sonner'
 
 import { useAppContext } from '@/context'
 
@@ -100,7 +101,14 @@ export default function LibrarySettingsRouter() {
 		},
 	})
 
-	const { mutate: scan } = useGraphQLMutation(scanMutation)
+	const { mutate: scan } = useGraphQLMutation(scanMutation, {
+		onError: (error) => {
+			console.error('Failed to scan library', error)
+			toast.error('Failed to scan library', {
+				description: 'Please check the logs for more details',
+			})
+		},
+	})
 
 	const scanLibrary = useCallback(
 		(options?: ScanOptions) => scan({ id: library.id, options }),
