@@ -5,7 +5,10 @@
     nixpkgs.url = "nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     android-nixpkgs.url = "github:tadfisher/android-nixpkgs";
+    android-nixpkgs.inputs.nixpkgs.follows = "nixpkgs";
+    android-nixpkgs.inputs.flake-utils.follows = "flake-utils";
   };
 
   outputs = { nixpkgs, rust-overlay, flake-utils, ... }:
@@ -55,8 +58,8 @@
           wget
           glib
           gtk3
-          libsoup_2_4
-          webkitgtk_4_1
+          libsoup_3
+          webkitgtk_6_0
         ];
 
         genericShellConfig = {
