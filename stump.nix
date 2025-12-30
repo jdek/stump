@@ -113,6 +113,6 @@ rustPlatform.buildRustPackage {
     homepage = "https://github.com/stumpapp/stump";
     license = licenses.mit;
     maintainers = [ ];
-    platforms = platforms.linux;
+    platforms = platforms.linux ++ platforms.darwin;
   };
 }
